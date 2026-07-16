@@ -1,0 +1,11 @@
+- name: Web development
+  percentage: 75
+  color: primary
+
+- name: Problem solving
+  percentage: 80
+  color: success
+
+- name: Version control
+  percentage: 75
+  color: info

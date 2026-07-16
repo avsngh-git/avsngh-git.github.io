@@ -1,0 +1,44 @@
+title: "Av Singh | Portfolio"
+description: "A portfolio of projects, skills, and work by Av Singh."
+url: "https://avsngh-git.github.io"
+baseurl: "/Portfoliogithubpages"
+repository: "avsngh-git/Portfoliogithubpages"
+remote_theme: "yousinix/portfolYOU@v2.3.0"
+open_new_tab: true
+
+plugins:
+  - jemoji
+
+nav_exclude:
+  - index.md
+  - 404.html
+
+author:
+  name: "Av Singh"
+  image: "https://github.com/avsngh-git.png"
+  github: "avsngh-git"
+
+permalink: /blog/:title
+
+collections:
+  projects:
+    output: true
+    permalink: /projects/:name
+
+defaults:
+  - scope:
+      path: ""
+      type: "projects"
+    values:
+      layout: "page"
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      comments: false
+
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - vendor/

@@ -1,0 +1,11 @@
+- name: Communication
+  percentage: 80
+  color: warning
+
+- name: Collaboration
+  percentage: 85
+  color: danger
+
+- name: Continuous learning
+  percentage: 90
+  color: secondary
