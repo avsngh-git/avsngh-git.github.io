@@ -1,11 +1,11 @@
-- name: Communication
-  percentage: 80
+- name: Python, SQL & data tooling
+  percentage: 90
   color: warning
 
-- name: Collaboration
+- name: PyTorch, TensorFlow & Apache Spark
   percentage: 85
   color: danger
 
-- name: Continuous learning
+- name: Research, analysis & technical communication
   percentage: 90
   color: secondary

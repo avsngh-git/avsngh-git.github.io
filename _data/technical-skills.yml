@@ -1,11 +1,11 @@
-- name: Web development
-  percentage: 75
+- name: Statistical inference & uncertainty quantification
+  percentage: 90
   color: primary
 
-- name: Problem solving
-  percentage: 80
+- name: Machine learning & deep learning
+  percentage: 85
   color: success
 
-- name: Version control
-  percentage: 75
+- name: Predictive modeling & model validation
+  percentage: 85
   color: info

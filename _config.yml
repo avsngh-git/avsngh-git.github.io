@@ -1,5 +1,5 @@
-title: "Av Singh | Portfolio"
-description: "A portfolio of projects, skills, and work by Av Singh."
+title: "Avinash Singh | Portfolio"
+description: "Statistician and machine-learning researcher focused on robust, interpretable data solutions."
 url: "https://avsngh-git.github.io"
 baseurl: "/Portfoliogithubpages"
 repository: "avsngh-git/Portfoliogithubpages"
@@ -14,9 +14,11 @@ nav_exclude:
   - 404.html
 
 author:
-  name: "Av Singh"
+  name: "Avinash Singh"
   image: "https://github.com/avsngh-git.png"
+  email: "avinjsingh@gmail.com"
   github: "avsngh-git"
+  linkedin: "avinashsinghsu"
 
 permalink: /blog/:title
 
