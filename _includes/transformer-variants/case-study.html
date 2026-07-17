@@ -1,0 +1,734 @@
+<article
+  id="transformer-case-study"
+  class="tvc"
+  data-summary-url="{{ '/assets/data/transformer-variants/summary.json' | relative_url }}"
+  data-attention-index-url="{{ '/assets/data/transformer-variants/attention/attention_patterns.json' | relative_url }}"
+  data-attention-base-url="{{ '/assets/data/transformer-variants/attention/' | relative_url }}"
+>
+  <header class="tvc-hero">
+    <div class="tvc-hero-copy">
+      <p class="tvc-eyebrow">Architecture research · training systems · interpretability</p>
+      <h1>Transformer Variants: Controlled Experiments at the 1B-Token Scale</h1>
+      <p class="tvc-lede">
+        I built an end-to-end experimental platform to compare ten Transformer recipes
+        under controlled training, multi-seed evaluation, long-context testing,
+        representation probes, and fault-tolerant infrastructure.
+      </p>
+      <div class="tvc-hero-actions">
+        <a
+          class="tvc-github-link"
+          href="https://github.com/avsngh-git/TransformerVariants"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="View TransformerVariants on GitHub"
+        >
+          <i class="fab fa-github" aria-hidden="true"></i>
+          <span>Source</span>
+        </a>
+        <a class="tvc-text-link" href="#results">Jump to results <span aria-hidden="true">↓</span></a>
+      </div>
+    </div>
+    <img
+      data-case-asset src="{{ '/assets/transformer-variants/thumbnail.svg' | relative_url }}"
+      class="tvc-hero-visual"
+      alt="Dense, local, linear, and mixture-of-experts Transformer paths leading to a quality-versus-throughput comparison"
+    >
+  </header>
+
+  <dl class="tvc-metrics" aria-label="Experiment scale">
+    <div><dt>10</dt><dd>model recipes</dd></div>
+    <div><dt>30</dt><dd>main training runs</dd></div>
+    <div><dt>983M</dt><dd>tokens per run</dd></div>
+    <div><dt>3</dt><dd>independent seeds</dd></div>
+    <div><dt>736</dt><dd>repository tests</dd></div>
+  </dl>
+
+  <nav class="tvc-section-nav" aria-label="Case-study sections">
+    <a href="#variant-taxonomy">Variants</a>
+    <a href="#experimental-protocol">Protocol</a>
+    <a href="#results">Results</a>
+    <a href="#throughput">Throughput</a>
+    <a href="#model-internals">Internals</a>
+    <a href="#design-choices">Design choices</a>
+    <a href="#limitations">Limitations</a>
+  </nav>
+
+  <section class="tvc-section tvc-intro">
+    <p class="tvc-section-kicker">The question</p>
+    <h2>What actually changes when the Transformer mechanism changes?</h2>
+    <p>
+      “Transformer variant” can mean a positional encoding, an attention kernel, a
+      sparsity pattern, a different feed-forward network, or several coordinated
+      changes at once. Comparing names from unrelated papers is therefore not enough.
+      I wanted to see what happens when the tokenizer, corpus, context length,
+      optimization recipe, training budget, evaluation windows, and hardware are held
+      as constant as the mechanism permits.
+    </p>
+    <p>
+      The result is not a single winning architecture. It is a map of trade-offs:
+      conditional capacity can buy lower loss while harming latency; an explicit
+      distance bias can extrapolate better than a stronger 1K model; and a better
+      asymptotic complexity can lose to an optimized quadratic kernel on real GPU
+      hardware.
+    </p>
+  </section>
+
+  <section class="tvc-section tvc-findings" aria-labelledby="headline-findings">
+    <p class="tvc-section-kicker">Headline findings</p>
+    <h2 id="headline-findings">Three results that changed how I think about “efficient” Transformers</h2>
+
+    <article class="tvc-finding tvc-finding-moe">
+      <div class="tvc-finding-number">01</div>
+      <div>
+        <h3>MoE bought quality with conditional capacity—not free speed</h3>
+        <p>
+          <strong>Mechanism.</strong> The full mixture-of-experts model stores eight
+          feed-forward experts and routes each token to the top two. That gives the
+          router a larger conditional function family than one dense FFN.
+        </p>
+        <math class="tvc-equation" display="block" aria-label="Mixture of experts output is the sum of selected expert outputs weighted by routing probabilities">
+          <mrow>
+            <msub><mi>y</mi><mi>t</mi></msub><mo>=</mo>
+            <munderover><mo>∑</mo><mrow><mi>e</mi><mo>∈</mo><mi>TopK</mi><mo>(</mo><mi>t</mi><mo>)</mo></mrow><mrow></mrow></munderover>
+            <msub><mi>p</mi><mrow><mi>t</mi><mi>e</mi></mrow></msub>
+            <msub><mi>E</mi><mi>e</mi></msub><mo>(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>)</mo>
+          </mrow>
+        </math>
+        <p>
+          <strong>Evidence.</strong> Full MoE reached the lowest fixed-data validation
+          loss, <strong>3.4292 ± 0.0013</strong>, but its uncached short-generation
+          throughput was only <strong>42.87 tokens/s</strong>, compared with
+          <strong>454.55 tokens/s</strong> for Vanilla.
+        </p>
+        <p class="tvc-caveat">
+          <strong>Caveat.</strong> MoE also violated the intended active-parameter
+          parity: 68.8M parameters were active per token and 172.6M were stored.
+          Expert dispatch produces smaller, irregular kernels, so sparse arithmetic did
+          not become low latency at this scale.
+        </p>
+      </div>
+    </article>
+
+    <article class="tvc-finding tvc-finding-context">
+      <div class="tvc-finding-number">02</div>
+      <div>
+        <h3>Distance structure mattered more than 1K quality at 4K</h3>
+        <p>
+          <strong>Mechanism.</strong> ALiBI adds a head-specific linear penalty to
+          attention logits. Because the term is defined by relative distance rather
+          than a learned 1K lookup table, the same rule remains meaningful at 4K.
+        </p>
+        <math class="tvc-equation" display="block" aria-label="ALiBI attention score equals scaled query key similarity minus a head-specific slope times distance">
+          <mrow>
+            <msubsup><mi>s</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>h</mi></msubsup>
+            <mo>=</mo>
+            <mfrac>
+              <mrow><msub><mi>q</mi><mi>i</mi></msub><mo>·</mo><msub><mi>k</mi><mi>j</mi></msub></mrow>
+              <msqrt><msub><mi>d</mi><mi>h</mi></msub></msqrt>
+            </mfrac>
+            <mo>−</mo><msub><mi>m</mi><mi>h</mi></msub><mo>(</mo><mi>i</mi><mo>−</mo><mi>j</mi><mo>)</mo>
+          </mrow>
+        </math>
+        <p>
+          <strong>Evidence.</strong> ALiBI had the lowest 4K tail perplexity,
+          <strong>58.74 ± 1.10</strong>. SWA finished only 0.20 perplexity points
+          behind, changed by essentially <strong>1.000×</strong> from 1K to 4K, and
+          reached <strong>253K prefill tokens/s</strong>.
+        </p>
+        <p class="tvc-caveat">
+          <strong>Caveat.</strong> SWA stayed stable because every query retained the
+          same 256-token local window. That demonstrates clean local transfer and
+          efficient prefill—not retrieval from tokens four thousand positions away.
+        </p>
+      </div>
+    </article>
+
+    <article class="tvc-finding tvc-finding-linear">
+      <div class="tvc-finding-number">03</div>
+      <div>
+        <h3>Linear asymptotics met a fixed-state and hardware bottleneck</h3>
+        <p>
+          <strong>Mechanism.</strong> Causal linear attention replaces the explicit
+          pairwise softmax matrix with recurrent prefix statistics. Sequence work can
+          scale linearly in length, but every history is compressed into a fixed-size
+          state.
+        </p>
+        <math class="tvc-equation" display="block" aria-label="Causal linear attention updates a prefix matrix and prefix normalizer recurrently">
+          <mtable>
+            <mtr><mtd><msub><mi>S</mi><mi>i</mi></msub><mo>=</mo><msub><mi>S</mi><mrow><mi>i</mi><mo>−</mo><mn>1</mn></mrow></msub><mo>+</mo><mi>φ</mi><mo>(</mo><msub><mi>k</mi><mi>i</mi></msub><mo>)</mo><msubsup><mi>v</mi><mi>i</mi><mi>T</mi></msubsup></mtd></mtr>
+            <mtr><mtd><msub><mi>z</mi><mi>i</mi></msub><mo>=</mo><msub><mi>z</mi><mrow><mi>i</mi><mo>−</mo><mn>1</mn></mrow></msub><mo>+</mo><mi>φ</mi><mo>(</mo><msub><mi>k</mi><mi>i</mi></msub><mo>)</mo></mtd></mtr>
+          </mtable>
+        </math>
+        <p>
+          <strong>Evidence.</strong> The corrected linear model trained stably and
+          reached a competitive 1K loss, but 4K tail perplexity rose to
+          <strong>1,311.78 ± 25.66</strong>; realized 4K prefill was only
+          <strong>34.7K tokens/s</strong>.
+        </p>
+        <p class="tvc-caveat">
+          <strong>Caveat.</strong> This result is about the tested ELU+1 prefix
+          recurrence, not every linear-attention design. The sequential, unfused path
+          also competed against mature dense GPU kernels.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <section id="variant-taxonomy" class="tvc-section">
+    <p class="tvc-section-kicker">Architecture taxonomy</p>
+    <h2>Ten recipes, grouped by the mechanism they change</h2>
+    <p>
+      A recipe is a buildable model configuration, not merely an attention class. The
+      registry applies each recipe consistently so changes in position handling,
+      normalization, feed-forward blocks, and cache behavior remain explicit.
+    </p>
+
+    <div class="tvc-family">
+      <h3>Dense baselines</h3>
+      <div class="tvc-variant-grid">
+        <article class="tvc-variant-card" data-variant="vanilla">
+          <h4>Vanilla</h4>
+          <p class="tvc-variant-change">GPT-2-style decoder: learned absolute positions, LayerNorm, dense multi-head attention, and a dense FFN.</p>
+          <p><strong>Hypothesis:</strong> a transparent reference point can remain competitive when its kernels and cache path are mature.</p>
+          <p><strong>Expected cost:</strong> quadratic attention and no position support beyond the learned 1K table.</p>
+        </article>
+        <article class="tvc-variant-card" data-variant="modern">
+          <h4>Modern</h4>
+          <p class="tvc-variant-change">RoPE, RMSNorm, SwiGLU, and memory-efficient scaled dot-product attention.</p>
+          <p><strong>Hypothesis:</strong> modern component choices improve optimization and quality without adding sparse capacity.</p>
+          <p><strong>Expected cost:</strong> dense quadratic attention remains, and RoPE extrapolation is not guaranteed.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="tvc-family">
+      <h3>Position and KV efficiency</h3>
+      <div class="tvc-variant-grid">
+        <article class="tvc-variant-card" data-variant="alibi">
+          <h4>ALiBI</h4>
+          <p class="tvc-variant-change">Replaces rotary position geometry with a head-specific linear distance penalty in the attention logits.</p>
+          <p><strong>Hypothesis:</strong> an explicit relative-distance rule extrapolates beyond the training length.</p>
+          <p><strong>Expected cost:</strong> full dense attention is still computed.</p>
+        </article>
+        <article class="tvc-variant-card" data-variant="gqa">
+          <h4>GQA</h4>
+          <p class="tvc-variant-change">Eight query heads share two key/value heads.</p>
+          <p><strong>Hypothesis:</strong> reduce KV parameters and cache memory while retaining diverse queries.</p>
+          <p><strong>Expected cost:</strong> shared keys/values may reduce representational freedom; the current cache seam must support grouped heads.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="tvc-family">
+      <h3>Local and compressed attention</h3>
+      <div class="tvc-variant-grid">
+        <article class="tvc-variant-card" data-variant="swa">
+          <h4>SWA</h4>
+          <p class="tvc-variant-change">Every attention layer sees only the current token and its 255 predecessors.</p>
+          <p><strong>Hypothesis:</strong> language modeling is sufficiently local to trade global edges for cheaper prefill.</p>
+          <p><strong>Expected cost:</strong> information cannot cross more than one window per layer.</p>
+        </article>
+        <article class="tvc-variant-card" data-variant="swa_interleaved">
+          <h4>SWA interleaved</h4>
+          <p class="tvc-variant-change">Alternates full global and 256-token local attention layers.</p>
+          <p><strong>Hypothesis:</strong> periodic global mixing recovers long-range paths while preserving some locality.</p>
+          <p><strong>Expected cost:</strong> global layers retain quadratic work and can reintroduce extrapolation sensitivity.</p>
+        </article>
+        <article class="tvc-variant-card" data-variant="linear">
+          <h4>Causal linear</h4>
+          <p class="tvc-variant-change">Uses an ELU+1 feature map and causal prefix-state recurrence with RoPE.</p>
+          <p><strong>Hypothesis:</strong> remove the explicit attention matrix and make sequence work linear in length.</p>
+          <p><strong>Expected cost:</strong> fixed-state compression loses token-level addressability; normalization is numerically sensitive.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="tvc-family">
+      <h3>Sparse feed-forward capacity</h3>
+      <div class="tvc-variant-grid">
+        <article class="tvc-variant-card" data-variant="moe">
+          <h4>MoE</h4>
+          <p class="tvc-variant-change">Eight FFN experts with top-2 routing in every Transformer block.</p>
+          <p><strong>Hypothesis:</strong> increase conditional capacity without activating every stored parameter.</p>
+          <p><strong>Expected cost:</strong> routing imbalance, extra memory, and irregular expert kernels.</p>
+        </article>
+        <article class="tvc-variant-card" data-variant="moe_interleaved">
+          <h4>MoE interleaved</h4>
+          <p class="tvc-variant-change">Alternates dense and top-2 MoE feed-forward blocks.</p>
+          <p><strong>Hypothesis:</strong> capture most sparse-capacity gains with less routing overhead.</p>
+          <p><strong>Expected cost:</strong> still exceeds dense parameter parity and creates mixed execution paths.</p>
+        </article>
+        <article class="tvc-variant-card" data-variant="moe_deep">
+          <h4>MoE deep</h4>
+          <p class="tvc-variant-change">Keeps the first half dense and places experts in deeper blocks.</p>
+          <p><strong>Hypothesis:</strong> early layers learn general features while later experts specialize.</p>
+          <p><strong>Expected cost:</strong> benefits depend on whether specialization actually emerges at this scale.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="experimental-protocol" class="tvc-section">
+    <p class="tvc-section-kicker">Experimental protocol</p>
+    <h2>Hold the pipeline still, then change the mechanism</h2>
+    <p>
+      Every main recipe used the same GPT-style tokenizer, FineWeb-Edu source corpus,
+      1,024-token training sequences, optimizer family, effective token batch, and
+      15,000-step budget. FineWeb-Edu is a filtered web-text corpus; I streamed it,
+      tokenized documents, inserted end-of-document separators, and wrote binary
+      shards that the trainer memory-maps instead of loading the corpus into RAM.
+    </p>
+
+    <figure class="tvc-figure tvc-protocol-figure">
+      <div class="tvc-flow" role="img" aria-label="Three seeds for each of ten recipes train on the same tokenized corpus and are evaluated on fixed token, time, FLOP, context, throughput, and representation axes">
+        <div><span>Shared corpus</span><strong>FineWeb-Edu shards</strong></div>
+        <b aria-hidden="true">→</b>
+        <div><span>Registry</span><strong>10 recipes × 3 seeds</strong></div>
+        <b aria-hidden="true">→</b>
+        <div><span>Training</span><strong>983M tokens each</strong></div>
+        <b aria-hidden="true">→</b>
+        <div><span>Evaluation</span><strong>quality · time · FLOPs · context</strong></div>
+      </div>
+      <figcaption class="figure-interpretation">
+        <strong>What it shows.</strong> Architecture is the intended treatment;
+        data, schedule, sequence length, and evaluation windows are controls.
+        <strong>Why it matters.</strong> The three reporting axes answer different
+        questions: statistical efficiency at fixed data, practical progress at fixed
+        time, and algorithmic efficiency at fixed estimated FLOPs.
+      </figcaption>
+    </figure>
+
+    <div class="tvc-protocol-notes">
+      <article>
+        <h3>Independent uncertainty units</h3>
+        <p>
+          I trained seeds 42, 137, and 2024. Error ranges use checkpoint-seed estimates,
+          not batches or token positions treated as independent replicas.
+        </p>
+      </article>
+      <article>
+        <h3>Target-aligned long context</h3>
+        <p>
+          At 1K, 2K, and 4K, every model scores the same final 256 target tokens over
+          eight fixed validation windows per checkpoint. Only available history changes.
+        </p>
+      </article>
+      <article>
+        <h3>Explicit unsupported states</h3>
+        <p>
+          A missing cache path, position range, or pairwise attention matrix is reported
+          as unsupported. The evaluator does not emulate a result the model never used.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section id="training-recipe" class="tvc-section">
+    <p class="tvc-section-kicker">Training recipe</p>
+    <h2>The objective and optimizer behind every comparison</h2>
+    <p>
+      All recipes are autoregressive language models. Given tokens
+      <em>x</em><sub>1</sub>…<em>x</em><sub>T</sub>, the model predicts each next token
+      from its causal prefix. The dense-model objective is mean next-token
+      cross-entropy:
+    </p>
+    <math class="tvc-equation" display="block" aria-label="Negative average log probability of each next token conditioned on its causal prefix">
+      <mrow>
+        <msub><mi>L</mi><mtext>CE</mtext></msub><mo>=</mo>
+        <mo>−</mo><mfrac><mn>1</mn><mi>T</mi></mfrac>
+        <munderover><mo>∑</mo><mrow><mi>t</mi><mo>=</mo><mn>1</mn></mrow><mi>T</mi></munderover>
+        <mi>log</mi><msub><mi>p</mi><mi>θ</mi></msub>
+        <mo>(</mo><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub>
+        <mo>|</mo><msub><mi>x</mi><mrow><mo>≤</mo><mi>t</mi></mrow></msub><mo>)</mo>
+      </mrow>
+    </math>
+    <p>
+      Lower cross-entropy means the model assigns more probability to held-out next
+      tokens. Perplexity is its exponential, so a loss difference is multiplicative in
+      average token uncertainty rather than merely a cosmetic score change.
+    </p>
+
+    <p>
+      MoE recipes add two router regularizers to cross-entropy: a load-balancing term
+      that discourages expert collapse and a z-loss that controls router-logit scale.
+    </p>
+    <math class="tvc-equation" display="block" aria-label="MoE loss equals cross entropy plus weighted load balancing and router z-loss terms">
+      <mrow>
+        <msub><mi>L</mi><mtext>MoE</mtext></msub><mo>=</mo>
+        <msub><mi>L</mi><mtext>CE</mtext></msub><mo>+</mo>
+        <mi>α</mi><mi>E</mi><munderover><mo>∑</mo><mrow><mi>e</mi><mo>=</mo><mn>1</mn></mrow><mi>E</mi></munderover>
+        <msub><mi>f</mi><mi>e</mi></msub><msub><mi>P</mi><mi>e</mi></msub><mo>+</mo>
+        <mi>β</mi><mi>mean</mi><mo>(</mo><msup><mrow><mi>logsumexp</mi><mo>(</mo><mi>r</mi><mo>)</mo></mrow><mn>2</mn></msup><mo>)</mo>
+      </mrow>
+    </math>
+
+    <div class="tvc-recipe-table-wrap">
+      <table class="tvc-recipe-table">
+        <tbody>
+          <tr><th scope="row">Optimizer</th><td>AdamW; β₁ = 0.9, β₂ = 0.95, weight decay = 0.1</td></tr>
+          <tr><th scope="row">Learning rate</th><td>3×10<sup>−4</sup> peak, 3×10<sup>−5</sup> floor</td></tr>
+          <tr><th scope="row">Schedule</th><td>5M-token linear warmup, then cosine decay</td></tr>
+          <tr><th scope="row">Batch</th><td>8 sequences × 8 accumulation steps × 1,024 tokens = 65,536 tokens/update</td></tr>
+          <tr><th scope="row">Precision</th><td>bfloat16 autocast; numerically sensitive reductions remain float32 where required</td></tr>
+          <tr><th scope="row">Stability</th><td>Global gradient norm clipped at 1.0; non-finite updates abort before optimizer mutation</td></tr>
+          <tr><th scope="row">Budget</th><td>15,000 optimizer steps = 983,040,000 tokens per main run</td></tr>
+          <tr><th scope="row">MoE terms</th><td>Load balance α = 0.01; router z-loss β = 0.001</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="tvc-reading-title">How I separate an architecture result from a systems result</h3>
+    <div class="tvc-protocol-notes">
+      <article>
+        <h3>Quality is a distribution, not one checkpoint</h3>
+        <p>
+          The fixed-data headline uses the mean and standard deviation across three
+          independently trained seeds at the common token budget. That makes the
+          checkpoint—not a batch, window, or individual token—the replication unit.
+          A difference larger than the observed seed spread is evidence that the
+          recipe changed optimization behavior under this setup. It is still not a
+          universal ranking: scaling the model, changing the corpus, or retuning one
+          architecture could change the order.
+        </p>
+      </article>
+      <article>
+        <h3>Parameter counts answer two different questions</h3>
+        <p>
+          Total parameters determine storage and memory pressure; active parameters
+          approximate how much learned capacity participates in one token's forward
+          pass. Dense models make those numbers equal. Top-2 MoE does not: two experts
+          execute per token, while all eight must remain resident. I therefore show
+          both counts and treat the failed active-parameter parity as a limitation.
+          Without that distinction, calling the MoE result “more efficient” would hide
+          the extra function capacity that likely produced its lower loss.
+        </p>
+      </article>
+      <article>
+        <h3>Complexity predicts scaling; measurement reveals the regime</h3>
+        <p>
+          Big-O notation describes what happens as sequence length grows, after
+          constants and hardware effects are ignored. These experiments live in a
+          finite regime on one NVIDIA L4-24Q. Wall-clock and throughput therefore
+          include kernel fusion, tensor shapes, memory traffic, expert dispatch,
+          synchronization, and cache support. The linear recurrence has the better
+          asymptotic attention bound, but the tested implementation never reaches the
+          length where that advantage outweighs its serial unfused work. I report that
+          as an implementation-aware result, not a contradiction of complexity theory.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section id="results" class="tvc-section">
+    <p class="tvc-section-kicker">Controlled results</p>
+    <h2>Quality is only meaningful beside the budget that produced it</h2>
+
+    <figure class="tvc-figure">
+      <div class="tvc-control-row" role="group" aria-label="Select learning-curve budget">
+        <button class="is-active" type="button" data-learning-axis="tokens">Fixed tokens</button>
+        <button type="button" data-learning-axis="wallclock">Wall-clock</button>
+        <button type="button" data-learning-axis="flops">Estimated FLOPs</button>
+      </div>
+      <div class="tvc-learning-plots">
+        <img
+          data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_tokens.png' | relative_url }}"
+          data-learning-plot="tokens"
+          alt="Validation loss against training tokens for all Transformer recipes"
+        >
+        <img
+          data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_wallclock.png' | relative_url }}"
+          data-learning-plot="wallclock"
+          alt="Validation loss against elapsed training time for all Transformer recipes"
+          hidden
+        >
+        <img
+          data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_flops.png' | relative_url }}"
+          data-learning-plot="flops"
+          alt="Validation loss against cumulative estimated floating-point operations for all Transformer recipes"
+          hidden
+        >
+      </div>
+      <figcaption class="figure-interpretation">
+        <strong>What it shows.</strong> The same histories are sliced by data consumed,
+        elapsed time, and estimated computation. <strong>Why it matters.</strong> MoE
+        wins at fixed data and FLOPs through capacity, while Modern is stronger at the
+        full wall-clock budget in the historical curves. A model can be statistically
+        efficient yet operationally slow; the axis determines the claim.
+      </figcaption>
+    </figure>
+
+    <figure class="tvc-figure">
+      <img
+        data-case-asset src="{{ '/assets/transformer-variants/plots/pareto_flops_val_loss.png' | relative_url }}"
+        alt="Validation loss versus cumulative FLOPs with Pareto-optimal Transformer variants highlighted"
+      >
+      <figcaption class="figure-interpretation">
+        <strong>What it shows.</strong> A point is Pareto-optimal when no other recipe
+        has both lower estimated FLOPs and lower loss. <strong>Why it matters.</strong>
+        Full MoE and Vanilla occupy different useful extremes. The plot argues against
+        a one-dimensional ranking: the preferred recipe depends on whether the next
+        unit of quality or the next unit of compute is more valuable.
+      </figcaption>
+    </figure>
+
+    <section class="tvc-result-block" aria-labelledby="long-context-title">
+      <h3 id="long-context-title">Long-context extrapolation: quality leaders changed after 1K</h3>
+      <div class="tvc-control-row">
+        <label for="context-metric">Measure</label>
+        <select id="context-metric">
+          <option value="tailPerplexity">Tail perplexity (lower is better)</option>
+          <option value="prefillTokensPerSecond">Prefill tokens/s (higher is better)</option>
+        </select>
+      </div>
+      <figure class="tvc-figure">
+        <div id="context-chart" class="tvc-chart" aria-live="polite">
+          <p class="tvc-loading">Loading frozen context measurements…</p>
+        </div>
+        <noscript>
+          <p>ALiBI: 56.07 → 58.74 perplexity; SWA: 58.95 → 58.93; Modern: 39.80 → 553.94; Linear: 50.10 → 1,311.78.</p>
+        </noscript>
+        <figcaption class="figure-interpretation">
+          <strong>What it shows.</strong> Every point scores the same final 256 tokens
+          while visible history grows from 1K to 4K; error bars are standard deviation
+          across three checkpoint-seed means. <strong>Why it matters.</strong> Low 1K
+          perplexity did not imply robust extrapolation. ALiBI preserved a meaningful
+          distance rule, while SWA kept an unchanged local problem. RoPE-based dense and
+          MoE recipes saw severe distribution shift outside the trained context.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="throughput" class="tvc-result-block">
+      <h3>Throughput: generation and prefill are different workloads</h3>
+      <p>
+        Autoregressive generation repeatedly advances one token; prefill processes a
+        complete prompt in parallel. I keep them separate because a model can be good
+        at one and poor at the other, and cache support changes the execution path.
+      </p>
+      <div class="tvc-control-row" role="group" aria-label="Select throughput workload">
+        <button class="is-active" type="button" data-throughput-metric="generationTokensPerSecond">Short generation</button>
+        <button type="button" data-throughput-metric="prefillTokensPerSecond4k">4K prefill</button>
+      </div>
+      <figure class="tvc-figure">
+        <div id="throughput-chart" class="tvc-bar-chart" aria-live="polite">
+          <p class="tvc-loading">Loading frozen throughput measurements…</p>
+        </div>
+        <noscript>
+          <p>Generation leaders: Vanilla 454.55 tokens/s, ALiBI 381.77, Modern 310.50. 4K prefill leaders: SWA 253K tokens/s, ALiBI 243K, GQA 240K.</p>
+        </noscript>
+        <figcaption class="figure-interpretation">
+          <strong>What it shows.</strong> Vanilla led the short-generation test;
+          SWA led 4K prefill among the quality leaders. MoE routing and the unfused
+          linear recurrence were slow in both relevant regimes. <strong>Why it
+          matters.</strong> FLOP notation does not capture kernel maturity, dispatch,
+          synchronization, cache layout, or achievable GPU occupancy. Hardware-aware
+          measurement must accompany complexity claims.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="tvc-result-block" aria-labelledby="comparison-table-title">
+      <h3 id="comparison-table-title">All-variant comparison</h3>
+      <p class="tvc-table-note">Select a column heading to sort. “Unsupported” is evidence about the implemented interface, not a zero.</p>
+      <div class="tvc-table-scroll">
+        <table id="variant-comparison" class="tvc-comparison-table">
+          <thead>
+            <tr>
+              <th scope="col"><button data-sort="variant">Recipe</button></th>
+              <th scope="col"><button data-sort="fixedDataLoss">Fixed-data loss ↓</button></th>
+              <th scope="col"><button data-sort="activeParameters">Active params</button></th>
+              <th scope="col"><button data-sort="totalParameters">Total params</button></th>
+              <th scope="col"><button data-sort="generationTokensPerSecond">Generation tok/s ↑</button></th>
+              <th scope="col"><button data-sort="tailPerplexity4k">4K tail PPL ↓</button></th>
+              <th scope="col"><button data-sort="prefillTokensPerSecond4k">4K prefill tok/s ↑</button></th>
+              <th scope="col"><button data-sort="cacheStatus">KV cache</button></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <section id="model-internals" class="tvc-section">
+    <p class="tvc-section-kicker">Inside the models</p>
+    <h2>Loss says whether a model predicts; probes suggest how its layers organize</h2>
+    <p>
+      I used stable rank to summarize how broadly a layer spreads activation energy
+      across representation directions. Linear CKA measures similarity between layer
+      representations: high adjacent-layer CKA means neighboring blocks transform the
+      residual stream more conservatively; lower values indicate a larger geometric
+      change. These are diagnostics, not quality scores.
+    </p>
+
+    <figure class="tvc-figure tvc-paired-figure">
+      <div>
+        <img
+          data-case-asset src="{{ '/assets/transformer-variants/plots/stable_rank.png' | relative_url }}"
+          alt="Stable rank by Transformer layer for all recipes"
+        >
+      </div>
+      <div>
+        <img
+          data-case-asset src="{{ '/assets/transformer-variants/plots/cka_adjacent.png' | relative_url }}"
+          alt="Adjacent-layer linear CKA for all Transformer recipes"
+        >
+      </div>
+      <figcaption class="figure-interpretation">
+        <strong>What it shows.</strong> Stable-rank curves reveal where representation
+        dimensionality expands or contracts; adjacent CKA reveals where successive
+        blocks preserve or reorganize geometry. <strong>Why it matters.</strong> Two
+        recipes with similar loss can reach it through different depth-wise dynamics.
+        The probes support architectural interpretation, but they do not establish that
+        high rank or low similarity is inherently better.
+      </figcaption>
+    </figure>
+
+    <section class="tvc-attention-explorer" aria-labelledby="attention-title">
+      <h3 id="attention-title">Attention-pattern explorer</h3>
+      <p>
+        Memory-efficient kernels avoid storing the full probability matrix. For
+        visualization, the exporter reconstructs the exact pre-dropout softmax
+        probabilities from each selected layer’s normalized input, including RoPE,
+        ALiBI bias, GQA head sharing, causal masks, and SWA windows.
+      </p>
+      <div class="tvc-attention-controls">
+        <label>Recipe
+          <select id="attention-variant">
+            <option value="modern">Modern</option>
+            <option value="vanilla">Vanilla</option>
+            <option value="alibi">ALiBI</option>
+            <option value="gqa">GQA</option>
+            <option value="swa">SWA</option>
+            <option value="swa_interleaved">SWA interleaved</option>
+            <option value="moe">MoE</option>
+            <option value="moe_interleaved">MoE interleaved</option>
+            <option value="moe_deep">MoE deep</option>
+            <option value="linear">Causal linear (unsupported)</option>
+          </select>
+        </label>
+        <label>Layer <select id="attention-layer"></select></label>
+        <label>Head <select id="attention-head"></select></label>
+      </div>
+      <figure class="tvc-figure">
+        <div id="attention-status" class="tvc-status" role="status"></div>
+        <canvas id="attention-canvas" width="720" height="620" aria-label="Selected causal attention heatmap"></canvas>
+        <noscript>
+          <img
+            data-case-asset src="{{ '/assets/transformer-variants/plots/attention_modern_layer_04.png' | relative_url }}"
+            alt="Modern Transformer mean attention probabilities at layer four"
+          >
+        </noscript>
+        <figcaption class="figure-interpretation">
+          <strong>What it shows.</strong> Each row is a query token and each column a
+          possible key; brighter cells receive more probability. The empty upper
+          triangle verifies causality, while bands expose locality and head selectors
+          expose specialization hidden by a mean heatmap. <strong>Why it matters.</strong>
+          Visualization is tied to the mechanism actually used. Causal linear
+          attention is explicitly unsupported because its prefix statistics do not
+          define one conventional pairwise softmax matrix.
+        </figcaption>
+      </figure>
+    </section>
+  </section>
+
+  <section id="design-choices" class="tvc-section">
+    <p class="tvc-section-kicker">Engineering design choices</p>
+    <h2>The comparison is a system, not a notebook</h2>
+
+    <figure class="tvc-figure tvc-system-figure">
+      <div class="tvc-system-flow" role="img" aria-label="FineWeb-Edu streaming flows through token shards, registry model construction, fault-tolerant training, multi-seed evaluation, publication assets, and Jekyll">
+        <div><span>01</span><strong>Stream</strong><small>FineWeb-Edu</small></div>
+        <b>→</b>
+        <div><span>02</span><strong>Prepare</strong><small>binary shards</small></div>
+        <b>→</b>
+        <div><span>03</span><strong>Build</strong><small>recipe registry</small></div>
+        <b>→</b>
+        <div><span>04</span><strong>Train</strong><small>verified recovery</small></div>
+        <b>→</b>
+        <div><span>05</span><strong>Evaluate</strong><small>three seeds</small></div>
+        <b>→</b>
+        <div><span>06</span><strong>Publish</strong><small>JSON · PNG · Jekyll</small></div>
+      </div>
+      <figcaption class="figure-interpretation">
+        <strong>What it shows.</strong> Data preparation, architecture construction,
+        recovery, evaluation, and publication are explicit stages with versioned
+        boundaries. <strong>Why it matters.</strong> A result can be reproduced,
+        inspected, and republished without rerunning an interactive dashboard or
+        manually copying numbers into a page.
+      </figcaption>
+    </figure>
+
+    <div class="tvc-decisions">
+      <article>
+        <h3>Registry-driven construction</h3>
+        <p><strong>Problem:</strong> variant-specific conditionals scattered through the trainer would make controls hard to audit.</p>
+        <p><strong>Choice:</strong> recipes own their model class, attention/FFN overrides, and per-layer rules behind one build interface.</p>
+        <p><strong>Trade-off:</strong> the registry must expose every meaningful deviation; hidden defaults would undermine the experiment.</p>
+      </article>
+      <article>
+        <h3>Streaming data preparation</h3>
+        <p><strong>Problem:</strong> a billion-token corpus should not require loading raw documents or token arrays into RAM.</p>
+        <p><strong>Choice:</strong> stream, filter, tokenize, and write checksummed uint16 shards with a manifest; memory-map only the active shard.</p>
+        <p><strong>Trade-off:</strong> sequential shards simplify throughput and provenance, while full example-level shuffling is intentionally avoided.</p>
+      </article>
+      <article>
+        <h3>Three fairness axes</h3>
+        <p><strong>Problem:</strong> equal tokens, equal elapsed time, and equal FLOPs are different scientific questions.</p>
+        <p><strong>Choice:</strong> report all three rather than selecting the axis that favors one architecture.</p>
+        <p><strong>Trade-off:</strong> FLOPs are modeled rather than hardware time, while wall-clock includes kernel maturity and implementation quality.</p>
+      </article>
+      <article>
+        <h3>Checkpoint-level uncertainty</h3>
+        <p><strong>Problem:</strong> thousands of token losses are correlated observations from the same trained model.</p>
+        <p><strong>Choice:</strong> use three independently trained checkpoints as the uncertainty units and fixed windows for paired context comparisons.</p>
+        <p><strong>Trade-off:</strong> three seeds give honest but still limited uncertainty estimates.</p>
+      </article>
+      <article>
+        <h3>Fault-tolerant recovery</h3>
+        <p><strong>Problem:</strong> long GPU runs can lose progress or resume from subtly corrupted state.</p>
+        <p><strong>Choice:</strong> asynchronous atomic saves, SHA-256 verification, ring rotation, health monitoring, and restoration of model, optimizer, RNG, and loader cursors.</p>
+        <p><strong>Trade-off:</strong> CPU snapshots and integrity metadata add complexity, but failures become explicit and testable.</p>
+      </article>
+      <article>
+        <h3>Frontend-agnostic publication</h3>
+        <p><strong>Problem:</strong> a server-bound dashboard is fragile as a portfolio artifact.</p>
+        <p><strong>Choice:</strong> export strict JSON and PNGs from the experiment repo, freeze them at a commit, and render with small local Jekyll assets.</p>
+        <p><strong>Trade-off:</strong> publication is a deliberate snapshot; new experiments require an explicit re-export.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="limitations" class="tvc-section tvc-limitations">
+    <p class="tvc-section-kicker">Interpretation boundaries</p>
+    <h2>What these experiments do not establish</h2>
+    <ul>
+      <li><strong>Parameter parity failed for MoE.</strong> Its quality advantage cannot be attributed to routing alone because active and stored capacity increased.</li>
+      <li><strong>Some historical time/FLOP histories lack independent error ranges.</strong> Copied seed histories cannot support artificial uncertainty bars.</li>
+      <li><strong>Generation timing uses one representative checkpoint per recipe.</strong> It is a hardware diagnostic, not a population estimate over training seeds.</li>
+      <li><strong>Long-context tests are extrapolation.</strong> Models trained at 1,024 tokens were evaluated at up to 4,096; this is not equivalent to long-context training.</li>
+      <li><strong>SWA stability is local.</strong> A fixed 256-token window can remain stable at a 4K container without retrieving from the distant prefix.</li>
+      <li><strong>Linear attention is a different operator.</strong> It has no conventional softmax heatmap, and this implementation does not represent all linear-attention families.</li>
+      <li><strong>Hardware conclusions are scoped.</strong> Measurements come from an NVIDIA L4-24Q and depend on these kernels, batch sizes, and cache implementations.</li>
+    </ul>
+  </section>
+
+  <footer class="tvc-reproducibility">
+    <div>
+      <p class="tvc-section-kicker">Reproducibility</p>
+      <h2>Frozen from the experiment, not hand-entered from screenshots</h2>
+      <p>
+        This page uses a versioned snapshot produced from TransformerVariants commit
+        <code>21e3cf2</code>. Summary metrics, attention assets, and static plots live
+        in this repository so the published case study remains stable.
+      </p>
+    </div>
+    <a
+      class="tvc-github-link"
+      href="https://github.com/avsngh-git/TransformerVariants"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="View TransformerVariants on GitHub"
+    ><i class="fab fa-github" aria-hidden="true"></i><span>Inspect the source</span></a>
+  </footer>
+</article>

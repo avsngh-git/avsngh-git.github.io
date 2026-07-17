@@ -1,0 +1,23 @@
+---
+name: "Transformer Variants: Controlled Experiments"
+title: "Transformer Variants: Controlled Experiments at the 1B-Token Scale"
+tools: [Transformers, PyTorch, CUDA, FlashAttention, FineWeb-Edu, Jekyll]
+image: /assets/transformer-variants/thumbnail.svg
+image_alt: "Abstract comparison of dense, local, and mixture-of-experts Transformer paths"
+description: "Ten Transformer recipes, thirty controlled runs, and one reproducible system for studying quality, long-context behavior, throughput, and model internals."
+github_url: https://github.com/avsngh-git/TransformerVariants
+github_label: View TransformerVariants on GitHub
+order: 1
+---
+
+<link
+  data-case-asset href="{{ '/assets/css/transformer-case-study.css' | relative_url }}"
+  rel="stylesheet"
+>
+
+{% include transformer-variants/case-study.html %}
+
+<script
+  data-case-asset src="{{ '/assets/js/transformer-case-study.mjs' | relative_url }}"
+  type="module"
+></script>

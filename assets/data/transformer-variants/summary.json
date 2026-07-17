@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "repository": "https://github.com/avsngh-git/TransformerVariants",
+    "commit": "21e3cf2",
+    "hardware": "NVIDIA L4-24Q"
+  },
+  "contextMetrics": {
+    "tailPerplexity": {
+      "alibi": [
+        { "context": 1024, "status": "ok", "mean": 56.07, "std": 0.51 },
+        { "context": 2048, "status": "ok", "mean": 58.29, "std": 0.88 },
+        { "context": 4096, "status": "ok", "mean": 58.74, "std": 1.1 }
+      ],
+      "gqa": [
+        { "context": 1024, "status": "ok", "mean": 60.1, "std": 0.41 },
+        { "context": 2048, "status": "ok", "mean": 370.72, "std": 82.01 },
+        { "context": 4096, "status": "ok", "mean": 437.37, "std": 47.76 }
+      ],
+      "linear": [
+        { "context": 1024, "status": "ok", "mean": 50.1, "std": 0.54 },
+        { "context": 2048, "status": "ok", "mean": 1103.41, "std": 299.49 },
+        { "context": 4096, "status": "ok", "mean": 1311.78, "std": 25.66 }
+      ],
+      "modern": [
+        { "context": 1024, "status": "ok", "mean": 39.8, "std": 0.31 },
+        { "context": 2048, "status": "ok", "mean": 453.01, "std": 61.98 },
+        { "context": 4096, "status": "ok", "mean": 553.94, "std": 18.95 }
+      ],
+      "moe": [
+        { "context": 1024, "status": "ok", "mean": 31.91, "std": 0.29 },
+        { "context": 2048, "status": "ok", "mean": 427.35, "std": 24.78 },
+        { "context": 4096, "status": "ok", "mean": 526.63, "std": 17.94 }
+      ],
+      "moe_deep": [
+        { "context": 1024, "status": "ok", "mean": 34.1, "std": 0.65 },
+        { "context": 2048, "status": "ok", "mean": 458.63, "std": 61.52 },
+        { "context": 4096, "status": "ok", "mean": 488.85, "std": 23.26 }
+      ],
+      "moe_interleaved": [
+        { "context": 1024, "status": "ok", "mean": 34.4, "std": 0.66 },
+        { "context": 2048, "status": "ok", "mean": 463.84, "std": 54.23 },
+        { "context": 4096, "status": "ok", "mean": 518.29, "std": 18.3 }
+      ],
+      "swa": [
+        { "context": 1024, "status": "ok", "mean": 58.95, "std": 0.45 },
+        { "context": 2048, "status": "ok", "mean": 58.95, "std": 0.48 },
+        { "context": 4096, "status": "ok", "mean": 58.93, "std": 0.46 }
+      ],
+      "swa_interleaved": [
+        { "context": 1024, "status": "ok", "mean": 58.58, "std": 0.28 },
+        { "context": 2048, "status": "ok", "mean": 78.48, "std": 4.5 },
+        { "context": 4096, "status": "ok", "mean": 84.86, "std": 6.12 }
+      ],
+      "vanilla": [
+        { "context": 1024, "status": "ok", "mean": 44.52, "std": 0.39 },
+        { "context": 2048, "status": "unsupported", "mean": null, "std": null },
+        { "context": 4096, "status": "unsupported", "mean": null, "std": null }
+      ]
+    },
+    "prefillTokensPerSecond": {
+      "alibi": [
+        { "context": 1024, "status": "ok", "mean": 235659.02, "std": 17131.3 },
+        { "context": 2048, "status": "ok", "mean": 289060.35, "std": 16234.44 },
+        { "context": 4096, "status": "ok", "mean": 242553.56, "std": 1162.16 }
+      ],
+      "gqa": [
+        { "context": 1024, "status": "ok", "mean": 184071.5, "std": 2521.28 },
+        { "context": 2048, "status": "ok", "mean": 267321.95, "std": 4754.73 },
+        { "context": 4096, "status": "ok", "mean": 239624.0, "std": 1697.36 }
+      ],
+      "linear": [
+        { "context": 1024, "status": "ok", "mean": 28955.26, "std": 1488.68 },
+        { "context": 2048, "status": "ok", "mean": 32443.83, "std": 448.14 },
+        { "context": 4096, "status": "ok", "mean": 34698.55, "std": 201.01 }
+      ],
+      "modern": [
+        { "context": 1024, "status": "ok", "mean": 64597.87, "std": 3708.16 },
+        { "context": 2048, "status": "ok", "mean": 57404.03, "std": 215.27 },
+        { "context": 4096, "status": "ok", "mean": 51199.74, "std": 234.8 }
+      ],
+      "moe": [
+        { "context": 1024, "status": "ok", "mean": 28113.96, "std": 987.74 },
+        { "context": 2048, "status": "ok", "mean": 35614.33, "std": 511.37 },
+        { "context": 4096, "status": "ok", "mean": 36035.8, "std": 287.32 }
+      ],
+      "moe_deep": [
+        { "context": 1024, "status": "ok", "mean": 40706.56, "std": 253.39 },
+        { "context": 2048, "status": "ok", "mean": 44035.21, "std": 20.31 },
+        { "context": 4096, "status": "ok", "mean": 41994.15, "std": 225.97 }
+      ],
+      "moe_interleaved": [
+        { "context": 1024, "status": "ok", "mean": 40555.22, "std": 190.75 },
+        { "context": 2048, "status": "ok", "mean": 44542.91, "std": 433.8 },
+        { "context": 4096, "status": "ok", "mean": 41696.96, "std": 96.29 }
+      ],
+      "swa": [
+        { "context": 1024, "status": "ok", "mean": 182673.79, "std": 3501.54 },
+        { "context": 2048, "status": "ok", "mean": 259650.33, "std": 4767.11 },
+        { "context": 4096, "status": "ok", "mean": 253394.52, "std": 1711.14 }
+      ],
+      "swa_interleaved": [
+        { "context": 1024, "status": "ok", "mean": 180592.85, "std": 6064.78 },
+        { "context": 2048, "status": "ok", "mean": 255086.53, "std": 1262.03 },
+        { "context": 4096, "status": "ok", "mean": 237850.59, "std": 2917.54 }
+      ],
+      "vanilla": [
+        { "context": 1024, "status": "ok", "mean": 46225.41, "std": 638.62 },
+        { "context": 2048, "status": "unsupported", "mean": null, "std": null },
+        { "context": 4096, "status": "unsupported", "mean": null, "std": null }
+      ]
+    }
+  },
+  "variants": [
+    {
+      "variant": "alibi",
+      "fixedDataLoss": { "mean": 3.9025, "std": 0.0023 },
+      "activeParameters": 51430400,
+      "totalParameters": 51430400,
+      "generationTokensPerSecond": 381.77,
+      "cacheStatus": "unsupported",
+      "tailPerplexity4k": { "status": "ok", "mean": 58.74, "std": 1.1 },
+      "perplexityRatio4k": { "status": "ok", "mean": 1.047, "std": 0.01 },
+      "prefillTokensPerSecond4k": 242553.56
+    },
+    {
+      "variant": "gqa",
+      "fixedDataLoss": { "mean": 3.9565, "std": 0.0034 },
+      "activeParameters": 48284672,
+      "totalParameters": 48284672,
+      "generationTokensPerSecond": 255.56,
+      "cacheStatus": "unsupported",
+      "tailPerplexity4k": { "status": "ok", "mean": 437.37, "std": 47.76 },
+      "perplexityRatio4k": { "status": "ok", "mean": 7.279, "std": 0.815 },
+      "prefillTokensPerSecond4k": 239624.0
+    },
+    {
+      "variant": "linear",
+      "fixedDataLoss": { "mean": 3.8344, "std": 0.0022 },
+      "activeParameters": 51430400,
+      "totalParameters": 51430400,
+      "generationTokensPerSecond": 126.67,
+      "cacheStatus": "unsupported",
+      "tailPerplexity4k": { "status": "ok", "mean": 1311.78, "std": 25.66 },
+      "perplexityRatio4k": { "status": "ok", "mean": 26.186, "std": 0.789 },
+      "prefillTokensPerSecond4k": 34698.55
+    },
+    {
+      "variant": "modern",
+      "fixedDataLoss": { "mean": 3.6176, "std": 0.0034 },
+      "activeParameters": 51430400,
+      "totalParameters": 51430400,
+      "generationTokensPerSecond": 310.5,
+      "cacheStatus": "ok",
+      "tailPerplexity4k": { "status": "ok", "mean": 553.94, "std": 18.95 },
+      "perplexityRatio4k": { "status": "ok", "mean": 13.917, "std": 0.368 },
+      "prefillTokensPerSecond4k": 51199.74
+    },
+    {
+      "variant": "moe",
+      "fixedDataLoss": { "mean": 3.4292, "std": 0.0013 },
+      "activeParameters": 68764672,
+      "totalParameters": 172573696,
+      "generationTokensPerSecond": 42.87,
+      "cacheStatus": "ok",
+      "tailPerplexity4k": { "status": "ok", "mean": 526.63, "std": 17.94 },
+      "perplexityRatio4k": { "status": "ok", "mean": 16.505, "std": 0.508 },
+      "prefillTokensPerSecond4k": 36035.8
+    },
+    {
+      "variant": "moe_deep",
+      "fixedDataLoss": { "mean": 3.4846, "std": 0.001 },
+      "activeParameters": 60097536,
+      "totalParameters": 112002048,
+      "generationTokensPerSecond": 77.24,
+      "cacheStatus": "ok",
+      "tailPerplexity4k": { "status": "ok", "mean": 488.85, "std": 23.26 },
+      "perplexityRatio4k": { "status": "ok", "mean": 14.329, "std": 0.423 },
+      "prefillTokensPerSecond4k": 41994.15
+    },
+    {
+      "variant": "moe_interleaved",
+      "fixedDataLoss": { "mean": 3.4826, "std": 0.0042 },
+      "activeParameters": 60097536,
+      "totalParameters": 112002048,
+      "generationTokensPerSecond": 76.72,
+      "cacheStatus": "ok",
+      "tailPerplexity4k": { "status": "ok", "mean": 518.29, "std": 18.3 },
+      "perplexityRatio4k": { "status": "ok", "mean": 15.077, "std": 0.817 },
+      "prefillTokensPerSecond4k": 41696.96
+    },
+    {
+      "variant": "swa",
+      "fixedDataLoss": { "mean": 3.9427, "std": 0.0043 },
+      "activeParameters": 51430400,
+      "totalParameters": 51430400,
+      "generationTokensPerSecond": 256.77,
+      "cacheStatus": "unsupported",
+      "tailPerplexity4k": { "status": "ok", "mean": 58.93, "std": 0.46 },
+      "perplexityRatio4k": { "status": "ok", "mean": 1.0, "std": 0.001 },
+      "prefillTokensPerSecond4k": 253394.52
+    },
+    {
+      "variant": "swa_interleaved",
+      "fixedDataLoss": { "mean": 3.9333, "std": 0.0105 },
+      "activeParameters": 51430400,
+      "totalParameters": 51430400,
+      "generationTokensPerSecond": 237.76,
+      "cacheStatus": "unsupported",
+      "tailPerplexity4k": { "status": "ok", "mean": 84.86, "std": 6.12 },
+      "perplexityRatio4k": { "status": "ok", "mean": 1.448, "std": 0.1 },
+      "prefillTokensPerSecond4k": 237850.59
+    },
+    {
+      "variant": "vanilla",
+      "fixedDataLoss": { "mean": 3.6984, "std": 0.0035 },
+      "activeParameters": 51430400,
+      "totalParameters": 51430400,
+      "generationTokensPerSecond": 454.55,
+      "cacheStatus": "ok",
+      "tailPerplexity4k": {
+        "status": "unsupported",
+        "reason": "Learned absolute positions end at the 1,024-token training context."
+      },
+      "perplexityRatio4k": { "status": "unsupported" },
+      "prefillTokensPerSecond4k": null
+    }
+  ]
+}

@@ -12,6 +12,7 @@ plugins:
 nav_exclude:
   - index.md
   - 404.html
+  - docs/transformer-variants-case-study.md
 
 author:
   name: "Avinash Singh"

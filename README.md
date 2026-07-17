@@ -26,4 +26,19 @@ bundle exec jekyll serve
 
 Open `http://localhost:4000/Portfoliogithubpages/`.
 
+## Transformer Variants case study
+
+The project card is defined in `_projects/transformer-variants.html`; its narrative
+is in `_includes/transformer-variants/case-study.html`. Frozen metrics and
+visualization assets are versioned under `assets/data/transformer-variants/` and
+`assets/transformer-variants/`. Their source provenance and the editorial decisions
+for the page are recorded in `docs/transformer-variants-case-study.md`.
+
+After building the site, validate both the frozen-data transforms and rendered Jekyll
+output with:
+
+```sh
+node --test test/*.test.mjs
+```
+
 The theme is distributed under the [MIT License](https://github.com/yousinix/portfolYOU/blob/master/LICENSE).
