@@ -16,18 +16,26 @@ Source repository: <https://github.com/avsngh-git/TransformerVariants>
 
 Frozen experiment provenance: `21e3cf2`
 
-## Page structure
+## Five-chapter structure
 
-1. Hero, GitHub icon, subtitle, and scale indicators.
-2. Three mechanism-led headline findings.
-3. Definitions for all ten recipes, grouped into baseline, positional, KV-efficient,
-   local/sparse, linear, and sparse-capacity families.
-4. Experimental protocol and training recipe.
-5. Results covering quality, Pareto trade-offs, long context, throughput, internal
-   representations, and attention patterns.
-6. Engineering design choices and an end-to-end system diagram.
-7. Prominent limitations and interpretation boundaries.
-8. Reproducibility provenance.
+The case study is a persistent five-page series rather than one long document. Every
+chapter repeats the numbered navigation, current-page state, provenance, and previous
+or next action.
+
+1. **Overview** — research question, scale, three mechanism-led findings, and a map to
+   the evidence.
+2. **Architecture choices** — explicit comparisons of positional schemes, attention
+   topologies, normalization, feed-forward networks, and MoE placement. Every mechanism
+   states what is used, its expected effect, and what the experiment observed.
+3. **Experimental design** — dataset preparation, training objective, AdamW recipe,
+   fairness axes, long-context protocol, uncertainty, and exact recovery.
+4. **Results** — learning histories, Pareto trade-offs, context extrapolation,
+   generation, prefill, and the sortable all-variant table.
+5. **Internals & engineering** — separate stable-rank and CKA figures, the attention
+   explorer, system decisions, fault tolerance, and limitations.
+
+Routes are `/projects/transformer-variants`, followed by `/architecture/`,
+`/experiments/`, `/results/`, and `/internals/` below that project path.
 
 ## Explanatory standard
 
@@ -35,20 +43,27 @@ Every major result follows **mechanism → evidence → caveat**. Every visualiz
 nearby text explaining both what is shown and why it matters. Results are presented as
 trade-offs rather than a universal leaderboard.
 
-## Visual scope
+## Visual and interaction scope
 
 1. Experimental protocol diagram.
-2. Token, wall-clock, and FLOP learning curves as a related group.
+2. Token, wall-clock, and FLOP learning curves selected one at a time in one large
+   figure, with a full-resolution action.
 3. Quality–compute Pareto plot.
 4. Long-context quality.
 5. Generation and prefill throughput as distinct workloads.
-6. Stable-rank and CKA representation diagnostics.
+6. Stable-rank and CKA representation diagnostics as separate full-width figures.
 7. Selectable attention-pattern gallery.
 
-Use local, progressively enhanced JavaScript with static fallbacks, variant filters,
-tooltips, a sortable comparison table, and lazy attention payloads. Use native MathML,
-accessible labels, a colorblind-safe palette, responsive layouts, and no new runtime
-framework or chart CDN.
+Every visualization carries an interpretive caption below it. Interactive areas use a
+blue bordered prompt, blue controls, focus states, and explicit text describing what
+will change. Use local, progressively enhanced JavaScript with static fallbacks, a
+sortable comparison table, and lazy attention payloads. Use native MathML, accessible
+labels, a colorblind-safe palette, responsive layouts, and no new runtime framework or
+chart CDN.
+
+The visual system inherits the original portfolYOU page typography, dark/light theme,
+spacing, and Bootstrap blue. Neutral surfaces and borders replace the former orange
+and green research-dashboard treatment.
 
 ## Training recipe to explain
 
@@ -91,14 +106,25 @@ framework or chart CDN.
 ## Card and identity
 
 Card tags: `Transformers`, `PyTorch`, `CUDA`, `FlashAttention`, `FineWeb-Edu`, `Jekyll`.
-Use a custom static thumbnail. Place a small, accessible GitHub icon on both the card
-and case-study hero. Retain portfolio typography/navigation with page-scoped research
-lab styling. Use first-person voice for implementation ownership and neutral scientific
-language for experimental claims.
+Use a custom static thumbnail. Place a small, accessible GitHub icon on the card and a
+prominent source action in the shared case-study footer. Retain portfolio typography
+and navigation with page-scoped styles. Use first-person voice for implementation
+ownership and neutral scientific language for experimental claims.
+
+## Implementation map
+
+- `_layouts/transformer-case-study.html` owns the shared assets and shell.
+- `_includes/transformer-variants/series-header.html` and `series-footer.html` own the
+  repeated five-chapter navigation and provenance.
+- `_includes/transformer-variants/chapters/` contains one narrative include per route.
+- `pages/transformer-variants-*.html` defines the four subchapter routes; the project
+  collection item defines Overview.
+- `projects.html` and `_includes/project-index-local.html` intentionally avoid the
+  remote theme's colliding `pages/projects.html` source path.
 
 ## Confirmed public test seams
 
 1. Rendered Jekyll Projects card and case-study output.
 2. Frozen visualization data transformed by local JavaScript.
 
-Review baseline: `9807cc4246e08830bbb8f7c320b64e43f976da71`.
+Original review baseline: `9807cc4246e08830bbb8f7c320b64e43f976da71`.

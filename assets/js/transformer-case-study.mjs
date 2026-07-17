@@ -14,9 +14,9 @@ const names = {
   swa: "SWA", swa_interleaved: "SWA interleaved", vanilla: "Vanilla",
 };
 const colors = {
-  alibi: "#d95d39", gqa: "#277da1", linear: "#9c6644", modern: "#05668d",
-  moe: "#6a4c93", moe_deep: "#9d4edd", moe_interleaved: "#c77dff",
-  swa: "#2a9d8f", swa_interleaved: "#70a288", vanilla: "#6c757d",
+  alibi: "#007bff", gqa: "#17a2b8", linear: "#495057", modern: "#0056b3",
+  moe: "#6f42c1", moe_deep: "#6610f2", moe_interleaved: "#845ef7",
+  swa: "#4c6ef5", swa_interleaved: "#748ffc", vanilla: "#adb5bd",
 };
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 const rate = (value) => (value >= 1000 ? compact.format(value) : value.toFixed(2)) + " tok/s";
@@ -29,19 +29,23 @@ async function fetchJson(url) {
 
 function setupLearningTabs() {
   const buttons = [...root.querySelectorAll("[data-learning-axis]")];
-  const plots = [...root.querySelectorAll("[data-learning-plot]")];
+  const plots = [...root.querySelectorAll("[data-learning-plot-link]")];
+  const zoom = root.querySelector("[data-learning-zoom]");
+  if (!buttons.length || !plots.length) return;
+  const select = (axis) => {
+    for (const candidate of buttons) {
+      const active = candidate.dataset.learningAxis === axis;
+      candidate.classList.toggle("is-active", active);
+      candidate.setAttribute("aria-pressed", String(active));
+    }
+    for (const plot of plots) plot.hidden = plot.dataset.learningPlotLink !== axis;
+    const activePlot = plots.find((plot) => plot.dataset.learningPlotLink === axis);
+    if (zoom && activePlot) zoom.href = activePlot.href;
+  };
   for (const button of buttons) {
-    button.addEventListener("click", () => {
-      for (const candidate of buttons) {
-        const active = candidate === button;
-        candidate.classList.toggle("is-active", active);
-        candidate.setAttribute("aria-pressed", String(active));
-      }
-      for (const plot of plots) {
-        plot.hidden = plot.dataset.learningPlot !== button.dataset.learningAxis;
-      }
-    });
+    button.addEventListener("click", () => select(button.dataset.learningAxis));
   }
+  select(buttons.find((button) => button.classList.contains("is-active"))?.dataset.learningAxis || "tokens");
 }
 
 function comparisonValue(row, key) {
@@ -142,17 +146,19 @@ function renderThroughput(summary, metric) {
 }
 function setupThroughput(summary) {
   const buttons = [...root.querySelectorAll("[data-throughput-metric]")];
+  if (!buttons.length) return;
+  const select = (metric) => {
+    for (const candidate of buttons) {
+      const active = candidate.dataset.throughputMetric === metric;
+      candidate.classList.toggle("is-active", active);
+      candidate.setAttribute("aria-pressed", String(active));
+    }
+    renderThroughput(summary, metric);
+  };
   for (const button of buttons) {
-    button.addEventListener("click", () => {
-      for (const candidate of buttons) {
-        const active = candidate === button;
-        candidate.classList.toggle("is-active", active);
-        candidate.setAttribute("aria-pressed", String(active));
-      }
-      renderThroughput(summary, button.dataset.throughputMetric);
-    });
+    button.addEventListener("click", () => select(button.dataset.throughputMetric));
   }
-  renderThroughput(summary, "generationTokensPerSecond");
+  select(buttons.find((button) => button.classList.contains("is-active"))?.dataset.throughputMetric || "generationTokensPerSecond");
 }
 
 const svgNamespace = "http://www.w3.org/2000/svg";
@@ -368,10 +374,12 @@ async function setupAttention() {
 
 async function initialize() {
   setupLearningTabs();
-  const summary = await fetchJson(root.dataset.summaryUrl);
-  renderComparisonTable(summary);
-  setupThroughput(summary);
-  setupContext(summary);
+  if (root.querySelector("#variant-comparison, #throughput-chart, #context-chart")) {
+    const summary = await fetchJson(root.dataset.summaryUrl);
+    renderComparisonTable(summary);
+    setupThroughput(summary);
+    setupContext(summary);
+  }
   await setupAttention();
 }
 initialize().catch((error) => {

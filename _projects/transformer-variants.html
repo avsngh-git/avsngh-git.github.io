@@ -1,4 +1,5 @@
 ---
+layout: transformer-case-study
 name: "Transformer Variants: Controlled Experiments"
 title: "Transformer Variants: Controlled Experiments at the 1B-Token Scale"
 tools: [Transformers, PyTorch, CUDA, FlashAttention, FineWeb-Edu, Jekyll]
@@ -8,16 +9,12 @@ description: "Ten Transformer recipes, thirty controlled runs, and one reproduci
 github_url: https://github.com/avsngh-git/TransformerVariants
 github_label: View TransformerVariants on GitHub
 order: 1
+case_chapter: overview
+case_number: "01"
+case_heading: "Transformer Variants: what changed, what improved, and what it cost"
+case_intro: "A controlled comparison of ten decoder-only Transformer recipes across prediction quality, long-context extrapolation, throughput, internal representations, and operational reliability."
+case_next_url: /projects/transformer-variants/architecture/
+case_next_label: Architecture choices
 ---
 
-<link
-  data-case-asset href="{{ '/assets/css/transformer-case-study.css' | relative_url }}"
-  rel="stylesheet"
->
-
-{% include transformer-variants/case-study.html %}
-
-<script
-  data-case-asset src="{{ '/assets/js/transformer-case-study.mjs' | relative_url }}"
-  type="module"
-></script>
+{% include transformer-variants/chapters/overview.html %}

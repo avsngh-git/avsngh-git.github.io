@@ -1,0 +1,96 @@
+<section class="tvc-section tvc-reading-width">
+  <p class="tvc-section-kicker">Comparison framework</p>
+  <h2>One recipe name can hide several architectural decisions</h2>
+  <p class="tvc-lead-paragraph">
+    The ten recipes are easiest to understand as interventions along three axes:
+    <strong>how position is represented</strong>, <strong>which tokens and heads can
+    exchange information</strong>, and <strong>how per-token nonlinear capacity is
+    allocated</strong>. Vanilla and Modern change all three component families at once;
+    ALiBI, GQA, SWA, linear attention, and the MoE recipes then modify selected parts
+    of the Modern backbone.
+  </p>
+  <p>
+    This matters for causal interpretation. If MoE outperforms Modern, the attention
+    operator and RoPE are unchanged—the intervention is feed-forward capacity. If
+    ALiBI extrapolates better, its RMSNorm and SwiGLU remain comparable to Modern—the
+    key intervention is the positional rule inside attention. The comparisons below
+    make that experimental structure explicit.
+  </p>
+  <nav class="tvc-topic-jumps" aria-label="Architecture comparison topics">
+    <a href="#position-encoding-comparison"><span>01</span> Position encoding</a>
+    <a href="#attention-comparison"><span>02</span> Attention topology</a>
+    <a href="#ffn-comparison"><span>03</span> FFN &amp; capacity</a>
+    <a href="#recipe-matrix"><span>04</span> Complete matrix</a>
+  </nav>
+</section>
+
+<section id="position-encoding-comparison" class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Axis 1 · Position</p>
+    <h2>Three ways to tell attention where a token is</h2>
+    <p>Causal masking controls direction; positional mechanisms supply distance. The experiment tests one learned absolute scheme and two relative schemes, RoPE and ALiBI.</p>
+  </div>
+  <div class="tvc-mechanism-stack">
+    <article class="tvc-mechanism-card">
+      <header><span class="tvc-mechanism-tag">Used by Vanilla</span><h3>Learned absolute positions</h3></header>
+      <div class="tvc-mechanism-body">
+        <div><h4>What is used</h4><p>A trainable vector is assigned to each index from 0 through 1,023 and added to the token embedding before the first block. Position 17 and position 817 therefore have separate learned parameters. Attention remains ordinary causal multi-head softmax attention.</p></div>
+        <div><h4>Expected effect</h4><p>The lookup table can fit position-specific regularities inside the training range. Its hard limit is equally clear: position 1,024 has no trained embedding, so extrapolation requires inventing or resizing parameters rather than applying an already defined rule.</p></div>
+        <div class="tvc-observed"><h4>Observed in this experiment</h4><p>Vanilla was a strong systems baseline—3.6984 fixed-data loss and the best short-generation throughput at 454.55 tokens/s. The evaluator correctly marked 2K and 4K quality as <strong>unsupported</strong>, a direct consequence of the finite learned position table.</p></div>
+      </div>
+    </article>
+    <article class="tvc-mechanism-card">
+      <header><span class="tvc-mechanism-tag">Used by 8 RoPE-based recipes</span><h3>Rotary position embeddings (RoPE)</h3></header>
+      <div class="tvc-mechanism-body">
+        <div><h4>What is used</h4><p>RoPE rotates query and key coordinates by position-dependent angles before their dot product. Relative phase expresses distance without adding a learned position vector. Modern, GQA, both SWA recipes, causal linear attention, and all three MoE recipes use RoPE.</p></div>
+        <div><h4>Expected effect</h4><p>Relative phase should provide a cleaner inductive bias than unrelated absolute lookup vectors and removes learned position parameters. Angles far beyond the 1K training range can still create unfamiliar phase relationships, so unscaled RoPE has an extrapolation path but not a stability guarantee.</p></div>
+        <div class="tvc-observed"><h4>Observed in this experiment</h4><p>RoPE-based global recipes were excellent at 1K: MoE reached 31.91 tail perplexity and Modern 39.80. At 4K, Modern rose to 553.94 and the MoE family to 488.85–526.63. More capacity did not remove the shared length shift.</p></div>
+      </div>
+    </article>
+    <article class="tvc-mechanism-card">
+      <header><span class="tvc-mechanism-tag">Used by ALiBI</span><h3>Attention with Linear Biases (ALiBI)</h3></header>
+      <div class="tvc-mechanism-body">
+        <div><h4>What is used</h4><p>ALiBI leaves queries and keys unrotated and subtracts a head-specific linear penalty as key distance grows. Steep-slope heads prefer local evidence; shallow-slope heads preserve broader context. No position embedding is added to the residual stream.</p></div>
+        <div><h4>Expected effect</h4><p>The same monotonic distance rule is defined at 1K, 2K, and 4K, avoiding new positional parameters or phases. The cost is an explicit recency prior: distant evidence is penalized even when semantically important.</p></div>
+        <div class="tvc-observed"><h4>Observed in this experiment</h4><p>ALiBI had weaker in-range quality than Modern—3.9025 versus 3.6176 loss—but the best 4K tail perplexity at 58.74 ± 1.10, only 1.047× its 1K value. A stronger distance prior traded some 1K fit for markedly better extrapolation.</p></div>
+      </div>
+    </article>
+  </div>
+  <aside class="tvc-synthesis tvc-reading-width"><h3>Position-level conclusion</h3><p>Absolute embeddings had no declared route beyond 1K. RoPE had a route but global-attention recipes did not remain calibrated at 4K. ALiBI kept the distance function structurally unchanged and extrapolated best. SWA also used RoPE but stayed stable because each query still saw only 256 recent positions—local transfer, not general long-range retrieval.</p></aside>
+</section>
+
+<section id="attention-comparison" class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width"><p class="tvc-section-kicker">Axis 2 · Token interaction</p><h2>Five attention topologies, five different bottlenecks</h2><p>All variants are causal. What changes is whether every earlier key is represented, whether key/value heads are shared, whether distance is truncated, and whether a pairwise softmax matrix exists at all.</p></div>
+  <div class="tvc-mechanism-grid">
+    <article class="tvc-compact-mechanism"><span class="tvc-mechanism-tag">Vanilla · Modern · ALiBI · MoE family</span><h3>Full multi-head attention</h3><p><strong>Mechanism.</strong> Every query head can score every earlier key and keeps its own query, key, and value projections.</p><p><strong>Expected effect.</strong> Maximum token-level addressability and mature kernels, with quadratic score interactions as context grows.</p><p class="tvc-observed"><strong>Observed in this experiment.</strong> Full attention supported the best in-range quality through MoE and strong generation through Vanilla, but global RoPE members degraded at 4K. Connectivity does not guarantee positional calibration.</p></article>
+    <article class="tvc-compact-mechanism"><span class="tvc-mechanism-tag">GQA · 8 query heads / 2 KV heads</span><h3>Grouped-query attention</h3><p><strong>Mechanism.</strong> Query heads remain distinct, while groups of four queries share one key and one value head.</p><p><strong>Expected effect.</strong> Cheaper KV parameters, memory, and bandwidth with a possible quality penalty from shared keys and values.</p><p class="tvc-observed"><strong>Observed in this experiment.</strong> GQA reduced parameters from 51.4M to 48.3M and reached 239.6K 4K-prefill tokens/s, but loss worsened to 3.9565. Its cache route remained unsupported, so this experiment does not claim the intended decode-memory benefit.</p></article>
+    <article class="tvc-compact-mechanism"><span class="tvc-mechanism-tag">SWA · 256-token window</span><h3>Sliding-window attention</h3><p><strong>Mechanism.</strong> Each layer restricts a query to itself and the preceding 255 tokens. Information can travel farther through depth, but no direct edge reaches an arbitrarily old token.</p><p><strong>Expected effect.</strong> Work proportional to sequence length times a fixed window, a strong locality prior, and reduced direct long-range retrieval.</p><p class="tvc-observed"><strong>Observed in this experiment.</strong> SWA led 4K prefill at 253.4K tokens/s and stayed flat from 1K to 4K perplexity, but had weaker 1K quality than Modern. The flat curve means the local task transferred cleanly.</p></article>
+    <article class="tvc-compact-mechanism"><span class="tvc-mechanism-tag">SWA interleaved · alternating full/local</span><h3>Interleaved global and local attention</h3><p><strong>Mechanism.</strong> Even layers use full causal attention and odd layers use the 256-token window.</p><p><strong>Expected effect.</strong> Recover long-range paths and in-range quality without paying for full attention in every block.</p><p class="tvc-observed"><strong>Observed in this experiment.</strong> Loss improved slightly over pure SWA, 3.9333 versus 3.9427, while 4K perplexity rose to 84.86. Global RoPE layers recovered connectivity and reintroduced length sensitivity.</p></article>
+    <article class="tvc-compact-mechanism"><span class="tvc-mechanism-tag">Linear · ELU+1 prefix recurrence</span><h3>Causal linear attention</h3><p><strong>Mechanism.</strong> A feature map factorizes attention into recurrent prefix statistics; history becomes a fixed-size state rather than an explicit softmax matrix.</p><p><strong>Expected effect.</strong> Linear sequence scaling and bounded state, traded against exact token addressability and feature-map approximation.</p><p class="tvc-observed"><strong>Observed in this experiment.</strong> The corrected model trained stably but reached only 34.7K 4K-prefill tokens/s and 1,311.78 tail perplexity. Serial unfused work lost to optimized softmax kernels in this regime.</p></article>
+  </div>
+</section>
+
+<section id="ffn-comparison" class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width"><p class="tvc-section-kicker">Axis 3 · Per-token transformation</p><h2>Dense FFNs, gated FFNs, and sparse conditional capacity</h2></div>
+  <div class="tvc-mechanism-grid tvc-three-up">
+    <article class="tvc-compact-mechanism"><span class="tvc-mechanism-tag">Vanilla</span><h3>Standard dense FFN</h3><p><strong>Mechanism.</strong> Two linear maps with ReLU expand each token to four times model width and project it back.</p><p><strong>Expected effect.</strong> Predictable dense kernels and a transparent baseline, with less selective gating.</p><p class="tvc-observed"><strong>Observed in this experiment.</strong> Vanilla did not win quality, but conventional operations and its supported cache path produced the best short-generation rate.</p></article>
+    <article class="tvc-compact-mechanism"><span class="tvc-mechanism-tag">All non-Vanilla recipes</span><h3>SwiGLU dense FFN</h3><p><strong>Mechanism.</strong> A SiLU-activated projection gates a second projection elementwise before the output map.</p><p><strong>Expected effect.</strong> More selective nonlinear behavior while preserving dense batch-friendly execution.</p><p class="tvc-observed"><strong>Observed in this experiment.</strong> Modern improved loss over Vanilla, although RoPE, RMSNorm, and SDPA changed simultaneously; SwiGLU is not isolated by that pair alone.</p></article>
+    <article class="tvc-compact-mechanism"><span class="tvc-mechanism-tag">MoE · interleaved · deep</span><h3>Mixture of experts</h3><p><strong>Mechanism.</strong> Eight SwiGLU experts are stored at an MoE layer; a router selects the top two. Full MoE uses every block, interleaved MoE the odd blocks, and deep MoE the second half.</p><p><strong>Expected effect.</strong> Expand conditional capacity without executing every stored parameter, while risking imbalance, irregular kernels, and memory cost.</p><p class="tvc-observed"><strong>Observed in this experiment.</strong> All placements beat Modern on fixed-data loss; full MoE was best. Partial placement recovered much of the gain with fewer parameters, but remained slow and did not repair RoPE extrapolation.</p></article>
+  </div>
+</section>
+
+<section id="recipe-matrix" class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width"><p class="tvc-section-kicker">Complete mapping</p><h2>What every recipe actually contains</h2><p>This matrix prevents a family name from being mistaken for a single isolated change.</p></div>
+  <div class="tvc-table-scroll"><table class="tvc-architecture-table"><thead><tr><th>Recipe</th><th>Position</th><th>Attention</th><th>Normalization</th><th>FFN / capacity</th><th>Main intended effect</th></tr></thead><tbody>
+    <tr><th>Vanilla</th><td>Learned absolute</td><td>Full MHA</td><td>LayerNorm</td><td>Dense ReLU</td><td>Transparent reference and mature decode</td></tr>
+    <tr><th>Modern</th><td>RoPE</td><td>Full SDPA</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Modern dense quality baseline</td></tr>
+    <tr><th>ALiBI</th><td>Linear distance bias</td><td>Full FlashAttention</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Explicit-distance extrapolation</td></tr>
+    <tr><th>GQA</th><td>RoPE</td><td>8 Q / 2 KV heads</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Reduce KV parameters and cache potential</td></tr>
+    <tr><th>SWA</th><td>RoPE</td><td>256-token local</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Locality and efficient long prefill</td></tr>
+    <tr><th>SWA interleaved</th><td>RoPE</td><td>Alternating full / local</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Balance global mixing with locality</td></tr>
+    <tr><th>Causal linear</th><td>RoPE</td><td>ELU+1 prefix state</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Linear sequence scaling</td></tr>
+    <tr><th>MoE</th><td>RoPE</td><td>Full SDPA</td><td>RMSNorm</td><td>Top-2 of 8 in every layer</td><td>Maximum conditional capacity</td></tr>
+    <tr><th>MoE interleaved</th><td>RoPE</td><td>Full SDPA</td><td>RMSNorm</td><td>MoE in odd layers</td><td>Capacity with fewer expert layers</td></tr>
+    <tr><th>MoE deep</th><td>RoPE</td><td>Full SDPA</td><td>RMSNorm</td><td>MoE in deeper half</td><td>Late-layer specialization</td></tr>
+  </tbody></table></div>
+</section>

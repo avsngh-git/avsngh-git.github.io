@@ -28,11 +28,12 @@ Open `http://localhost:4000/Portfoliogithubpages/`.
 
 ## Transformer Variants case study
 
-The project card is defined in `_projects/transformer-variants.html`; its narrative
-is in `_includes/transformer-variants/case-study.html`. Frozen metrics and
-visualization assets are versioned under `assets/data/transformer-variants/` and
-`assets/transformer-variants/`. Their source provenance and the editorial decisions
-for the page are recorded in `docs/transformer-variants-case-study.md`.
+The project card and Overview route begin in `_projects/transformer-variants.html`.
+The five-part narrative lives in `_includes/transformer-variants/chapters/`, with a
+shared shell in `_layouts/transformer-case-study.html`. Frozen metrics and visualization
+assets are versioned under `assets/data/transformer-variants/` and
+`assets/transformer-variants/`. Source provenance, route structure, and editorial
+decisions are recorded in `docs/transformer-variants-case-study.md`.
 
 After building the site, validate both the frozen-data transforms and rendered Jekyll
 output with:

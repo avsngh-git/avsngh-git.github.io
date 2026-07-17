@@ -1,0 +1,217 @@
+<section class="tvc-section tvc-reading-width">
+  <p class="tvc-section-kicker">How to read this chapter</p>
+  <h2>The ranking changes when the resource changes</h2>
+  <p class="tvc-lead-paragraph">
+    “Best model” is under-specified. Full MoE is best after a fixed number of training
+    tokens. Vanilla is fastest in the measured short-generation path. SWA leads 4K
+    prompt prefill. ALiBI is most robust on the 4K tail-quality test. Those statements
+    can all be true because they optimize different quantities.
+  </p>
+  <p>
+    The figures below deliberately preserve that multidimensional result. Every chart
+    is displayed at full width; the learning-curve views occupy the same figure one at
+    a time so labels and seed traces remain legible. Interactive controls are marked in
+    blue and announce exactly what changes when selected.
+  </p>
+</section>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Training efficiency</p>
+    <h2>The same learning histories, viewed against three budgets</h2>
+    <p>
+      Re-plotting the same checkpoints changes the denominator, not the underlying
+      observations. Fixed tokens emphasizes how much a recipe learns from data;
+      wall-clock includes the implementation's real speed; estimated FLOPs emphasizes
+      modeled arithmetic. A result that survives all three views is stronger than a
+      result visible on only one convenient axis.
+    </p>
+  </div>
+
+  <div class="tvc-interactive-prompt">
+    <span class="tvc-prompt-icon" aria-hidden="true">↕</span>
+    <div><strong>Interactive figure</strong><p>Choose the budget on the blue buttons. The large plot below updates in place.</p></div>
+  </div>
+  <div class="tvc-control-row tvc-control-panel" role="group" aria-label="Select learning-curve budget">
+    <button class="is-active" type="button" data-learning-axis="tokens"><span>01</span> Fixed tokens</button>
+    <button type="button" data-learning-axis="wallclock"><span>02</span> Wall-clock</button>
+    <button type="button" data-learning-axis="flops"><span>03</span> Estimated FLOPs</button>
+  </div>
+
+  <figure class="tvc-figure tvc-wide-figure" id="learning-curves-figure">
+    <div class="tvc-learning-plots">
+      <a href="{{ '/assets/transformer-variants/plots/learning_curves_tokens.png' | relative_url }}" target="_blank" rel="noopener noreferrer" data-learning-plot-link="tokens">
+        <img data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_tokens.png' | relative_url }}" data-learning-plot="tokens" alt="Validation loss against training tokens for all Transformer recipes">
+      </a>
+      <a href="{{ '/assets/transformer-variants/plots/learning_curves_wallclock.png' | relative_url }}" target="_blank" rel="noopener noreferrer" data-learning-plot-link="wallclock" hidden>
+        <img data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_wallclock.png' | relative_url }}" data-learning-plot="wallclock" alt="Validation loss against elapsed training time for all Transformer recipes">
+      </a>
+      <a href="{{ '/assets/transformer-variants/plots/learning_curves_flops.png' | relative_url }}" target="_blank" rel="noopener noreferrer" data-learning-plot-link="flops" hidden>
+        <img data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_flops.png' | relative_url }}" data-learning-plot="flops" alt="Validation loss against cumulative estimated floating-point operations for all Transformer recipes">
+      </a>
+    </div>
+    <a class="tvc-figure-zoom" href="{{ '/assets/transformer-variants/plots/learning_curves_tokens.png' | relative_url }}" target="_blank" rel="noopener noreferrer" data-learning-zoom><span aria-hidden="true">↗</span> Open current plot at full resolution</a>
+    <figcaption class="figure-interpretation">
+      <h3>What the curves establish</h3>
+      <p>
+        At fixed data, sparse capacity is powerful: the MoE family descends below the
+        dense baselines, with full MoE reaching the lowest final loss. That result does
+        not automatically make MoE the practical training winner. Expert routing adds
+        dispatch and synchronization, so the wall-clock view incorporates costs the
+        token axis intentionally ignores. The FLOP view is a third abstraction: it
+        rewards algorithms that convert modeled arithmetic into quality, but cannot
+        express memory traffic or GPU utilization.
+      </p>
+      <p>
+        The important reading is not “pick the axis where one model wins.” It is that
+        conditional capacity improved statistical efficiency while dense kernels could
+        retain operational advantages. The preferred recipe depends on whether data,
+        elapsed accelerator time, or modeled compute is the binding constraint.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Pareto efficiency</p>
+    <h2>A useful frontier is more informative than a single ordered list</h2>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="pareto-figure">
+    <a href="{{ '/assets/transformer-variants/plots/pareto_flops_val_loss.png' | relative_url }}" target="_blank" rel="noopener noreferrer">
+      <img data-case-asset src="{{ '/assets/transformer-variants/plots/pareto_flops_val_loss.png' | relative_url }}" alt="Validation loss versus cumulative FLOPs with Pareto-optimal Transformer variants highlighted">
+    </a>
+    <a class="tvc-figure-zoom" href="{{ '/assets/transformer-variants/plots/pareto_flops_val_loss.png' | relative_url }}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> Open plot at full resolution</a>
+    <figcaption class="figure-interpretation">
+      <h3>What the Pareto frontier means</h3>
+      <p>
+        A point is Pareto-optimal if no measured alternative has both lower cumulative
+        estimated FLOPs and lower validation loss. A frontier model can therefore be a
+        rational choice without having the globally lowest loss. Vanilla and full MoE
+        occupy different useful regimes: one offers a comparatively economical dense
+        reference; the other buys quality through much larger conditional capacity.
+      </p>
+      <p>
+        Points behind the frontier are not necessarily useless. GQA targets KV memory,
+        SWA targets long-prompt attention work, and ALiBI targets extrapolation—benefits
+        not represented on a loss-versus-FLOPs plane. The chart is a compute-quality
+        decision surface, not a complete product ranking.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="tvc-section" id="long-context-results">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Long-context extrapolation</p>
+    <h2>Good 1K quality did not predict good 4K behavior</h2>
+    <p>
+      Each point scores the same final 256 targets while the visible prefix grows.
+      Perplexity therefore asks whether extra context and unseen position ranges help
+      or destabilize prediction; prefill throughput asks how efficiently the operator
+      processes that longer prompt. Tail perplexity uses a logarithmic scale because
+      the degradation spans more than an order of magnitude.
+    </p>
+  </div>
+  <div class="tvc-interactive-prompt">
+    <span class="tvc-prompt-icon" aria-hidden="true">⌁</span>
+    <div><strong>Interactive comparison</strong><p>Use the highlighted selector to switch between tail perplexity and prefill throughput.</p></div>
+  </div>
+  <div class="tvc-control-panel tvc-select-panel">
+    <label for="context-metric">Choose the long-context measure</label>
+    <select id="context-metric">
+      <option value="tailPerplexity">Tail perplexity — lower is better</option>
+      <option value="prefillTokensPerSecond">Prefill tokens/s — higher is better</option>
+    </select>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="context-figure">
+    <div id="context-chart" class="tvc-chart" aria-live="polite"><p class="tvc-loading">Loading frozen context measurements…</p></div>
+    <noscript><p>ALiBI: 56.07 → 58.74 perplexity; SWA: 58.95 → 58.93; Modern: 39.80 → 553.94; Linear: 50.10 → 1,311.78.</p></noscript>
+    <figcaption class="figure-interpretation">
+      <h3>Why the quality leaders reverse</h3>
+      <p>
+        At 1K, full MoE and Modern are strongest. At 4K, ALiBI and pure SWA are strongest
+        by a wide margin. ALiBI preserves a head-specific distance penalty that remains
+        structurally defined beyond training. SWA preserves a fixed local problem: the
+        outer container grows, but no query sees more than 256 positions. Those are
+        different kinds of robustness and should not be conflated.
+      </p>
+      <p>
+        Global RoPE recipes—including the higher-capacity MoE family—show severe
+        degradation. This is evidence that more capacity cannot automatically correct
+        a positional distribution shift. Interleaved SWA sits between pure local and
+        full global behavior: its periodic global layers improve connectivity and also
+        make the model more sensitive to the unseen length range.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="tvc-section" id="throughput-results">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Serving behavior</p>
+    <h2>Generation and prefill exercise different hardware paths</h2>
+    <p>
+      Autoregressive generation advances one token at a time and benefits strongly
+      from reusable key/value state. Prefill processes all prompt tokens in parallel
+      and exposes the attention operator's behavior at long sequence lengths. A single
+      throughput number cannot describe both workloads.
+    </p>
+  </div>
+  <div class="tvc-interactive-prompt">
+    <span class="tvc-prompt-icon" aria-hidden="true">▶</span>
+    <div><strong>Interactive ranking</strong><p>Select a workload. Bars reorder automatically so the measured leader is always at the top.</p></div>
+  </div>
+  <div class="tvc-control-row tvc-control-panel" role="group" aria-label="Select throughput workload">
+    <button class="is-active" type="button" data-throughput-metric="generationTokensPerSecond"><span>01</span> Short generation</button>
+    <button type="button" data-throughput-metric="prefillTokensPerSecond4k"><span>02</span> 4K prompt prefill</button>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="throughput-figure">
+    <div id="throughput-chart" class="tvc-bar-chart" aria-live="polite"><p class="tvc-loading">Loading frozen throughput measurements…</p></div>
+    <noscript><p>Generation leaders: Vanilla 454.55 tokens/s, ALiBI 381.77, Modern 310.50. 4K prefill leaders: SWA 253K tokens/s, ALiBI 243K, GQA 240K.</p></noscript>
+    <figcaption class="figure-interpretation">
+      <h3>What realized speed adds to complexity analysis</h3>
+      <p>
+        Vanilla leads the measured short-generation path, showing the value of a mature
+        dense operator and supported cache route. SWA leads 4K prefill because its
+        window bounds attention work; ALiBI and GQA also use efficient FlashAttention
+        paths. Full MoE and causal linear attention are slow for different reasons:
+        irregular expert dispatch in one case, serial unfused prefix recurrence in the
+        other.
+      </p>
+      <p>
+        The conclusion is scoped to an NVIDIA L4-24Q, these tensor shapes, and these
+        implementations. It does not invalidate theoretical scaling. It demonstrates
+        that FLOPs, kernel maturity, synchronization, cache layout, memory traffic, and
+        occupancy must all be measured before an efficiency claim becomes operational.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="tvc-section" id="all-variant-results">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Complete evidence</p>
+    <h2>All ten recipes in one sortable comparison</h2>
+    <p>Unsupported is kept distinct from zero: it describes an interface or positional path the tested recipe did not provide.</p>
+  </div>
+  <div class="tvc-interactive-prompt">
+    <span class="tvc-prompt-icon" aria-hidden="true">↕</span>
+    <div><strong>Sortable table</strong><p>Select any blue column heading to rank the recipes. Select it again to reverse the order.</p></div>
+  </div>
+  <div class="tvc-table-scroll tvc-wide-table">
+    <table id="variant-comparison" class="tvc-comparison-table">
+      <thead><tr>
+        <th scope="col"><button data-sort="variant">Recipe</button></th>
+        <th scope="col"><button data-sort="fixedDataLoss">Fixed-data loss ↓</button></th>
+        <th scope="col"><button data-sort="activeParameters">Active params</button></th>
+        <th scope="col"><button data-sort="totalParameters">Total params</button></th>
+        <th scope="col"><button data-sort="generationTokensPerSecond">Generation tok/s ↑</button></th>
+        <th scope="col"><button data-sort="tailPerplexity4k">4K tail PPL ↓</button></th>
+        <th scope="col"><button data-sort="prefillTokensPerSecond4k">4K prefill tok/s ↑</button></th>
+        <th scope="col"><button data-sort="cacheStatus">KV cache</button></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>

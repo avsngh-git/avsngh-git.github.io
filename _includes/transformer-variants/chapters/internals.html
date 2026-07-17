@@ -1,0 +1,187 @@
+<section class="tvc-section tvc-reading-width">
+  <p class="tvc-section-kicker">Interpretability stance</p>
+  <h2>Internal probes explain behavior; they do not replace behavioral evaluation</h2>
+  <p class="tvc-lead-paragraph">
+    Validation loss tells us whether a model predicts held-out tokens. Throughput tells
+    us how the implementation uses hardware. Internal probes answer a different kind
+    of question: how broadly activations occupy representation space, how much one
+    layer changes the geometry produced by the previous layer, and where individual
+    attention heads place probability.
+  </p>
+  <p>
+    These diagnostics are descriptive evidence about trained checkpoints, not proof
+    that one representation is intrinsically better. A high stable rank may reflect
+    broad feature use or noise; a sharp CKA transition may indicate useful
+    specialization or disruption. The interpretation becomes credible only when a
+    probe is connected to the architecture and checked against quality and systems
+    results.
+  </p>
+</section>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Representation dimensionality</p>
+    <h2>Stable rank shows how activation energy spreads across directions</h2>
+    <p>
+      Stable rank is the squared Frobenius norm divided by the squared spectral norm.
+      Informally, it becomes larger when activation energy is distributed across more
+      singular directions instead of being dominated by one direction. It is a smooth
+      effective-dimensionality statistic, not the exact algebraic rank.
+    </p>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="stable-rank-figure">
+    <a href="{{ '/assets/transformer-variants/plots/stable_rank.png' | relative_url }}" target="_blank" rel="noopener noreferrer">
+      <img data-case-asset src="{{ '/assets/transformer-variants/plots/stable_rank.png' | relative_url }}" alt="Stable rank by Transformer layer for all recipes">
+    </a>
+    <a class="tvc-figure-zoom" href="{{ '/assets/transformer-variants/plots/stable_rank.png' | relative_url }}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> Open plot at full resolution</a>
+    <figcaption class="figure-interpretation">
+      <h3>What the depth profiles show</h3>
+      <p>
+        ALiBI has the highest mean stable rank (15.2) and expands sharply in the middle
+        and later blocks, reaching roughly 20 around layers four and five. Pure SWA and
+        interleaved SWA form the next high-rank group. Linear attention has the lowest
+        mean (4.4), with compressed early and middle representations before a partial
+        late expansion. The dense Modern and MoE families occupy the middle-to-lower
+        range despite their stronger next-token losses.
+      </p>
+      <h3>Why that pattern matters—and what it does not prove</h3>
+      <p>
+        Architectural constraints change how the residual stream uses dimensions.
+        ALiBI's head-specific distance slopes and SWA's locality are associated with
+        broader activation spectra here, while the fixed-state linear operator is
+        associated with a narrower spectrum. Yet full MoE achieves the best loss with
+        a mean rank of only 7.0. Conditional expert capacity can improve prediction
+        without maximizing residual-stream dimensionality. Stable rank therefore helps
+        distinguish representational regimes; it is not a quality objective.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Layer-to-layer change</p>
+    <h2>CKA reveals where the representation geometry is preserved or reorganized</h2>
+    <p>
+      Linear centered kernel alignment compares the pairwise geometry of two activation
+      matrices while remaining insensitive to isotropic scaling and orthogonal basis
+      changes. High adjacent-layer CKA means two neighboring blocks preserve similar
+      relationships among token representations; a low value marks a stronger
+      geometric transition.
+    </p>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="cka-figure">
+    <a href="{{ '/assets/transformer-variants/plots/cka_adjacent.png' | relative_url }}" target="_blank" rel="noopener noreferrer">
+      <img data-case-asset src="{{ '/assets/transformer-variants/plots/cka_adjacent.png' | relative_url }}" alt="Adjacent-layer linear CKA for all Transformer recipes">
+    </a>
+    <a class="tvc-figure-zoom" href="{{ '/assets/transformer-variants/plots/cka_adjacent.png' | relative_url }}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> Open plot at full resolution</a>
+    <figcaption class="figure-interpretation">
+      <h3>The important signal is the location of a drop, not a universal target value</h3>
+      <p>
+        Most adjacent pairs remain between roughly 0.7 and 0.95, so the residual stream
+        is generally transformed incrementally. The most architecture-aligned event is
+        MoE deep's drop to about 0.36 at pair three. That pair crosses from the dense
+        first half into the expert-equipped second half, so a large geometric change at
+        the placement boundary is consistent with the intended late specialization.
+      </p>
+      <p>
+        Linear attention also shows unusually low similarity at the first pair and near
+        pair five, suggesting its compressed prefix operator reorganizes representations
+        differently across depth. Modern has a visible middle-layer drop, while ALiBI
+        remains comparatively consistent. None of these observations establishes that
+        “lower CKA is better.” They identify where to investigate mechanism-specific
+        transformations and connect especially well to deliberate layer transitions.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="tvc-section tvc-attention-explorer" aria-labelledby="attention-title">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Head-level behavior</p>
+    <h2 id="attention-title">Compare reconstructed causal attention patterns</h2>
+    <p>
+      Memory-efficient kernels usually avoid retaining the full probability matrix.
+      The exporter reconstructs exact pre-dropout softmax probabilities for selected
+      checkpoints from the normalized layer input, applying the same RoPE rotations,
+      ALiBI slopes, GQA head sharing, causal masks, and configured windows as the model.
+      Each heatmap row is a query and each column is a possible key.
+    </p>
+  </div>
+  <div class="tvc-interactive-prompt">
+    <span class="tvc-prompt-icon" aria-hidden="true">✦</span>
+    <div><strong>Interactive attention explorer</strong><p>Choose a recipe, layer, and head in the blue controls. The heatmap and evidence label update immediately.</p></div>
+  </div>
+  <div class="tvc-attention-controls tvc-control-panel">
+    <label>Choose recipe
+      <select id="attention-variant">
+        <option value="modern">Modern</option><option value="vanilla">Vanilla</option>
+        <option value="alibi">ALiBI</option><option value="gqa">GQA</option>
+        <option value="swa">SWA</option><option value="swa_interleaved">SWA interleaved</option>
+        <option value="moe">MoE</option><option value="moe_interleaved">MoE interleaved</option>
+        <option value="moe_deep">MoE deep</option><option value="linear">Causal linear — no pairwise map</option>
+      </select>
+    </label>
+    <label>Choose layer <select id="attention-layer"></select></label>
+    <label>Choose head <select id="attention-head"></select></label>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="attention-figure">
+    <div id="attention-status" class="tvc-status" role="status"></div>
+    <canvas id="attention-canvas" width="720" height="620" aria-label="Selected causal attention heatmap"></canvas>
+    <noscript><img data-case-asset src="{{ '/assets/transformer-variants/plots/attention_modern_layer_04.png' | relative_url }}" alt="Modern Transformer mean attention probabilities at layer four"></noscript>
+    <figcaption class="figure-interpretation">
+      <h3>What to compare across attention families</h3>
+      <p>
+        Every softmax map must have an empty upper triangle: non-zero probability above
+        that boundary would reveal future-token leakage. ALiBI is expected to place
+        stronger probability near the diagonal, especially in steep-slope heads,
+        because distance is subtracted directly from logits. GQA can still show
+        head-specific patterns because query heads differ, even though groups share
+        keys and values; the heatmap alone cannot display the memory saving.
+      </p>
+      <p>
+        Modern and the three MoE recipes use the same attention operator. Differences
+        among their maps reflect different learned representations, not a different
+        attention topology. The exported sample is 64 tokens—shorter than SWA's
+        256-token window—so it cannot visibly demonstrate the window boundary; the
+        architecture configuration and 4K throughput measurement provide that evidence.
+        Causal linear attention is explicitly unsupported because prefix statistics do
+        not define one conventional pairwise softmax matrix. Refusing to manufacture a
+        heatmap is part of faithful interpretation.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Engineering design</p>
+    <h2>The system makes architectural claims auditable</h2>
+    <p>
+      The scientific comparison depends on software boundaries that keep variant
+      knowledge explicit, recovery exact, and evaluation reproducible. These choices
+      are part of the project outcome rather than invisible scaffolding.
+    </p>
+  </div>
+  <div class="tvc-decision-list">
+    <article><span>01</span><div><h3>Registry-driven construction</h3><p><strong>Problem.</strong> Scattered variant conditionals make it difficult to tell which components changed.</p><p><strong>Choice.</strong> Each registered recipe declares its model class, position method, attention class, normalization, FFN, overrides, and optional per-layer pattern behind one build interface.</p><p><strong>Consequence.</strong> The complete architecture matrix can be generated from explicit construction knowledge; a new recipe must declare its deviations instead of inheriting hidden trainer branches.</p></div></article>
+    <article><span>02</span><div><h3>Protocol-level attention interface</h3><p><strong>Problem.</strong> Full attention, GQA, SWA, ALiBI, and linear recurrence expose different cache and visualization semantics.</p><p><strong>Choice.</strong> Callers pass cache state opaquely and evaluators ask capabilities rather than assuming every operator materializes the same tensors.</p><p><strong>Consequence.</strong> Unsupported cache and attention-map states remain visible, preventing a convenient but scientifically false common denominator.</p></div></article>
+    <article><span>03</span><div><h3>Verified asynchronous checkpoints</h3><p><strong>Problem.</strong> GPU failures and partial writes can destroy progress or silently alter the run after recovery.</p><p><strong>Choice.</strong> CPU snapshots, atomic replacement, SHA-256 verification, ring rotation, health monitoring, and restoration of model, optimizer, RNG, scheduler, and loader cursor.</p><p><strong>Consequence.</strong> Recovery preserves the identity of a seed and its exact consumed-token trajectory, not only a set of model weights.</p></div></article>
+    <article><span>04</span><div><h3>Frontend-agnostic evidence</h3><p><strong>Problem.</strong> A server-bound dashboard is fragile and difficult to preserve as a portfolio artifact.</p><p><strong>Choice.</strong> Evaluators emit strict JSON and publication-ready plots; this Jekyll site freezes a versioned snapshot and adds small local interactions.</p><p><strong>Consequence.</strong> The page can be rebuilt without a Python server, while every displayed number remains traceable to the experiment commit.</p></div></article>
+  </div>
+</section>
+
+<section class="tvc-section tvc-limitations">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Interpretation boundaries</p>
+    <h2>What this evidence does not establish</h2>
+  </div>
+  <div class="tvc-limit-list">
+    <article><h3>MoE is not parameter-matched</h3><p>Full MoE activates 68.8M and stores 172.6M parameters versus 51.4M for the dense baseline. Its quality advantage cannot be attributed to routing independently of increased capacity.</p></article>
+    <article><h3>Three seeds provide limited uncertainty</h3><p>Checkpoint seeds are the correct replication unit, but three observations still produce broad uncertainty about how rankings would behave under new initializations, corpora, or scales.</p></article>
+    <article><h3>Long context is extrapolation, not long-context training</h3><p>Every recipe trains at 1,024 tokens and is tested up to 4,096. The result measures behavior outside the training range and should not be generalized to models trained natively at 4K.</p></article>
+    <article><h3>SWA's stability is local</h3><p>A 4K container does not imply a 4K receptive field. Each SWA query sees at most 256 tokens per layer, so flat perplexity cannot demonstrate retrieval from the distant prefix.</p></article>
+    <article><h3>Throughput is hardware- and implementation-specific</h3><p>Measurements come from an NVIDIA L4-24Q and these kernels, tensor shapes, cache paths, and batch sizes. The relative order can change with fused kernels or different accelerators.</p></article>
+    <article><h3>Internal probes are diagnostic</h3><p>Stable rank, CKA, and heatmaps reveal structure but do not identify a causal reason for downstream quality without targeted interventions and task-level probes.</p></article>
+  </div>
+</section>

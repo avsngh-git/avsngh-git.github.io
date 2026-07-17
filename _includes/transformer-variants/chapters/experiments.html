@@ -1,0 +1,186 @@
+<section class="tvc-section tvc-reading-width">
+  <p class="tvc-section-kicker">Experimental logic</p>
+  <h2>Change the mechanism; hold the measurement system still</h2>
+  <p class="tvc-lead-paragraph">
+    Architecture comparisons become misleading when each model receives a different
+    corpus, token budget, optimizer, or evaluation slice. I treated the recipe as the
+    intended intervention and the rest of the pipeline as controlled infrastructure.
+    That does not make every pair a perfect ablation—Vanilla and Modern deliberately
+    differ in several components, and MoE missed parameter parity—but it makes those
+    deviations visible and keeps accidental variation out of the result.
+  </p>
+  <p>
+    The main configuration uses eight Transformer blocks, width 512, eight query
+    heads, 1,024-token sequences, tied token/output embeddings, no dropout, and the
+    GPT-2 vocabulary. Every recipe trains for 15,000 optimizer steps with an effective
+    batch of 65,536 tokens, or exactly 983,040,000 tokens per run. Seeds 42, 137, and
+    2024 provide independently initialized checkpoints for the primary estimates.
+  </p>
+</section>
+
+<figure class="tvc-figure tvc-wide-figure">
+  <div class="tvc-system-flow" role="img" aria-label="FineWeb-Edu moves through streaming preparation, shared token shards, ten registered recipes, three-seed training, fixed evaluations, and frozen publication assets">
+    <div><span>01</span><strong>Stream</strong><small>FineWeb-Edu documents</small></div><b>→</b>
+    <div><span>02</span><strong>Prepare</strong><small>token shards + manifest</small></div><b>→</b>
+    <div><span>03</span><strong>Build</strong><small>10 registered recipes</small></div><b>→</b>
+    <div><span>04</span><strong>Train</strong><small>3 seeds × 983M tokens</small></div><b>→</b>
+    <div><span>05</span><strong>Evaluate</strong><small>quality · context · speed</small></div><b>→</b>
+    <div><span>06</span><strong>Publish</strong><small>versioned JSON + figures</small></div>
+  </div>
+  <figcaption class="figure-interpretation">
+    <h3>Why the pipeline is part of the experiment</h3>
+    <p>
+      Each stage has an explicit artifact boundary: a data manifest, a registered
+      model configuration, a verified checkpoint, an evaluation record, and a frozen
+      publication asset. A number on the results page can therefore be traced back to
+      the exact corpus preparation, model recipe, checkpoint seed, evaluator, and
+      source commit that produced it.
+    </p>
+  </figcaption>
+</figure>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Dataset engineering</p>
+    <h2>Preparing FineWeb-Edu for sustained model consumption</h2>
+    <p>
+      FineWeb-Edu is a filtered collection of educational web text, not a model or a
+      tokenizer. The raw stream contains documents; the trainer needs contiguous token
+      sequences with predictable I/O, resumable position tracking, and a stable train/
+      validation split. The preparation pipeline bridges that gap without loading the
+      billion-token corpus into memory.
+    </p>
+  </div>
+  <div class="tvc-detail-grid">
+    <article><span>01</span><h3>Stream and filter</h3><p>Documents are read incrementally. Quality and length checks operate as records pass through, which bounds memory and makes rejection statistics observable rather than silently changing the corpus.</p></article>
+    <article><span>02</span><h3>Tokenize and delimit</h3><p>The GPT-2 tokenizer converts text into integer IDs; end-of-document tokens preserve document boundaries in the continuous stream. Shared tokenization prevents vocabulary differences from becoming an architectural confound.</p></article>
+    <article><span>03</span><h3>Write binary shards</h3><p>Token IDs are stored as compact uint16 shards with a manifest and integrity metadata. Training memory-maps the active shard instead of deserializing the whole dataset, supporting stable throughput at billion-token scale.</p></article>
+    <article><span>04</span><h3>Resume exactly</h3><p>The data loader persists shard identity, cursor position, and RNG state with the checkpoint. A resumed run continues from the same token boundary instead of replaying or skipping an unknown part of the training stream.</p></article>
+  </div>
+  <aside class="tvc-synthesis tvc-reading-width">
+    <h3>Design trade-off</h3>
+    <p>
+      Sequential memory-mapped shards simplify provenance, throughput, and exact
+      recovery. They do not provide unrestricted example-level shuffling across the
+      entire corpus. That choice favors repeatable large-scale consumption over the
+      illusion of perfect global randomization.
+    </p>
+  </aside>
+</section>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Objective and optimization</p>
+    <h2>The same language-modeling task drives every recipe</h2>
+    <p>
+      Each input sequence is shifted by one token. At position <em>t</em>, the model
+      sees only the causal prefix and predicts token <em>t + 1</em>. The dense objective
+      is mean next-token cross-entropy. Lower loss means the model assigns more
+      probability to held-out targets; perplexity is the exponential of that loss, so
+      even a modest loss difference is multiplicative in average token uncertainty.
+    </p>
+  </div>
+  <math class="tvc-equation" display="block" aria-label="Negative average log probability of each next token conditioned on its causal prefix">
+    <mrow><msub><mi>L</mi><mtext>CE</mtext></msub><mo>=</mo><mo>−</mo><mfrac><mn>1</mn><mi>T</mi></mfrac><munderover><mo>∑</mo><mrow><mi>t</mi><mo>=</mo><mn>1</mn></mrow><mi>T</mi></munderover><mi>log</mi><msub><mi>p</mi><mi>θ</mi></msub><mo>(</mo><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>|</mo><msub><mi>x</mi><mrow><mo>≤</mo><mi>t</mi></mrow></msub><mo>)</mo></mrow>
+  </math>
+  <div class="tvc-reading-width">
+    <p>
+      MoE recipes add two router regularizers. The load-balancing term discourages a
+      small subset of experts from receiving nearly every token; the router z-loss
+      controls the scale of routing logits. These terms improve routing stability, but
+      they also mean MoE's optimized objective is not numerically identical to the
+      dense objective. Reported validation loss remains the comparable next-token
+      cross-entropy component.
+    </p>
+  </div>
+  <math class="tvc-equation" display="block" aria-label="MoE loss equals cross entropy plus weighted load balancing and router z-loss terms">
+    <mrow><msub><mi>L</mi><mtext>MoE</mtext></msub><mo>=</mo><msub><mi>L</mi><mtext>CE</mtext></msub><mo>+</mo><mi>α</mi><mi>E</mi><munderover><mo>∑</mo><mrow><mi>e</mi><mo>=</mo><mn>1</mn></mrow><mi>E</mi></munderover><msub><mi>f</mi><mi>e</mi></msub><msub><mi>P</mi><mi>e</mi></msub><mo>+</mo><mi>β</mi><mi>mean</mi><mo>(</mo><msup><mrow><mi>logsumexp</mi><mo>(</mo><mi>r</mi><mo>)</mo></mrow><mn>2</mn></msup><mo>)</mo></mrow>
+  </math>
+  <div class="tvc-table-scroll tvc-recipe-wrap">
+    <table class="tvc-recipe-table"><tbody>
+      <tr><th>Optimizer</th><td>AdamW; β₁ = 0.9, β₂ = 0.95, weight decay = 0.1</td></tr>
+      <tr><th>Learning rate</th><td>3×10<sup>−4</sup> peak, 3×10<sup>−5</sup> floor</td></tr>
+      <tr><th>Schedule</th><td>5M-token linear warmup, followed by cosine decay</td></tr>
+      <tr><th>Effective batch</th><td>8 sequences × 8 accumulation steps × 1,024 tokens = 65,536 tokens/update</td></tr>
+      <tr><th>Precision</th><td>bfloat16 autocast; sensitive reductions remain float32 where required</td></tr>
+      <tr><th>Stability</th><td>Global gradient norm clipped at 1.0; non-finite updates abort before optimizer mutation</td></tr>
+      <tr><th>Budget</th><td>15,000 optimizer steps = 983,040,000 tokens per run</td></tr>
+      <tr><th>MoE terms</th><td>Load balance α = 0.01; router z-loss β = 0.001</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Measurement design</p>
+    <h2>One experiment, three fairness axes</h2>
+    <p>
+      Equal tokens, equal elapsed time, and equal estimated FLOPs are not interchangeable.
+      A model with more conditional capacity may learn more from each token while
+      spending longer on each update. A model with highly optimized dense kernels may
+      progress farther in a wall-clock budget even if its statistical efficiency is
+      lower. The report therefore keeps all three views.
+    </p>
+  </div>
+  <div class="tvc-comparison-cards">
+    <article><h3>Fixed tokens</h3><p><strong>Question:</strong> after seeing the same amount of data, which recipe predicts held-out tokens best?</p><p><strong>Captures:</strong> statistical efficiency and usable capacity.</p><p><strong>Misses:</strong> time, memory pressure, and implementation overhead.</p></article>
+    <article><h3>Fixed wall-clock</h3><p><strong>Question:</strong> by the same elapsed training time, which implementation has progressed farthest?</p><p><strong>Captures:</strong> actual hardware behavior, kernels, and routing overhead.</p><p><strong>Misses:</strong> portability across devices and implementations.</p></article>
+    <article><h3>Fixed estimated FLOPs</h3><p><strong>Question:</strong> for a modeled arithmetic budget, which recipe achieves lower loss?</p><p><strong>Captures:</strong> an algorithm-oriented compute comparison.</p><p><strong>Misses:</strong> memory traffic, occupancy, and whether nominal FLOPs execute efficiently.</p></article>
+  </div>
+</section>
+
+<section class="tvc-section">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Long-context protocol</p>
+    <h2>Change available history, keep the scored targets fixed</h2>
+    <p>
+      Comparing perplexity over unrelated 1K and 4K passages would mix context length
+      with target difficulty. Instead, the evaluator draws eight fixed validation
+      windows per checkpoint and always scores the same final 256 target tokens. At
+      1K, 2K, and 4K, only the amount of preceding history changes. Each checkpoint
+      first produces a mean over windows; the error bars then use the three independent
+      checkpoint seeds as the uncertainty units.
+    </p>
+    <p>
+      This design separates additional history from different targets, but it remains
+      an extrapolation test: every model trained at 1,024 tokens. It also distinguishes
+      an unsupported model from a poor one. Vanilla's learned table cannot represent
+      positions above 1,023, and missing cache interfaces are reported as unsupported
+      instead of assigning a fabricated zero or silently emulating another path.
+    </p>
+  </div>
+  <div class="tvc-protocol-steps">
+    <div><span>1K</span><p>Score final 256 tokens with up to 768 tokens of earlier history.</p></div>
+    <div><span>2K</span><p>Score the same target locations with a longer visible prefix.</p></div>
+    <div><span>4K</span><p>Score the same targets again; changes now reflect additional history and length extrapolation.</p></div>
+  </div>
+</section>
+
+<section class="tvc-section tvc-reading-width">
+  <p class="tvc-section-kicker">Fault tolerance</p>
+  <h2>Recovery preserves experimental identity, not only model weights</h2>
+  <p>
+    Long GPU runs are vulnerable to process failure, storage interruption, numerical
+    spikes, and partial checkpoint writes. A restart that restores only parameters can
+    silently alter the optimizer trajectory or replay data, creating a run that no
+    longer corresponds to its declared seed and token budget.
+  </p>
+  <p>
+    Checkpoints therefore capture the model, optimizer, scheduler, scaler state where
+    applicable, RNG states, data-loader cursor, step, and consumed-token count. Saves
+    use a CPU snapshot and atomic replacement so the training process never exposes a
+    half-written checkpoint as valid. SHA-256 verification, ring rotation, and fallback
+    recovery provide a known-good predecessor. A rolling health monitor watches loss
+    and gradient norms, rejects non-finite updates, and keeps anomalies from polluting
+    its own reference window.
+  </p>
+  <aside class="tvc-callout">
+    <h3>Why this affects scientific validity</h3>
+    <p>
+      Fault tolerance is not merely uptime engineering. Exact recovery protects the
+      independent-seed design, the consumed-token denominator, and the claim that each
+      checkpoint experienced the same training protocol. Infrastructure state is part
+      of the experimental state.
+    </p>
+  </aside>
+</section>

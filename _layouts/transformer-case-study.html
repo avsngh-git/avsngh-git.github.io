@@ -1,0 +1,32 @@
+---
+layout: page
+---
+
+<link
+  data-case-asset
+  href="{{ '/assets/css/transformer-case-study.css' | relative_url }}"
+  rel="stylesheet"
+>
+
+<article
+  id="transformer-case-study"
+  class="tvc"
+  data-case-chapter="{{ page.case_chapter }}"
+  data-summary-url="{{ '/assets/data/transformer-variants/summary.json' | relative_url }}"
+  data-attention-index-url="{{ '/assets/data/transformer-variants/attention/attention_patterns.json' | relative_url }}"
+  data-attention-base-url="{{ '/assets/data/transformer-variants/attention/' | relative_url }}"
+>
+  {% include transformer-variants/series-header.html %}
+
+  <div class="tvc-chapter-content">
+    {{ content }}
+  </div>
+
+  {% include transformer-variants/series-footer.html %}
+</article>
+
+<script
+  data-case-asset
+  src="{{ '/assets/js/transformer-case-study.mjs' | relative_url }}"
+  type="module"
+></script>

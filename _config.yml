@@ -13,6 +13,10 @@ nav_exclude:
   - index.md
   - 404.html
   - docs/transformer-variants-case-study.md
+  - pages/transformer-variants-architecture.html
+  - pages/transformer-variants-experiments.html
+  - pages/transformer-variants-results.html
+  - pages/transformer-variants-internals.html
 
 author:
   name: "Avinash Singh"
@@ -41,6 +45,7 @@ defaults:
       comments: false
 
 exclude:
+  - pages/projects.html
   - README.md
   - Gemfile
   - Gemfile.lock
