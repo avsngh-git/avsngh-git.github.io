@@ -26,7 +26,7 @@ test("Projects page exposes the case-study card and accessible GitHub action", a
   const html = await readFile(path.join(siteRoot, "projects/index.html"), "utf8");
 
   assert.match(html, /Transformer Variants: Controlled Experiments/);
-  assert.match(html, /href="\/Portfoliogithubpages\/projects\/transformer-variants"/);
+  assert.match(html, /href="\/projects\/transformer-variants"/);
   assert.match(html, /aria-label="View TransformerVariants on GitHub"/);
 });
 
@@ -84,8 +84,8 @@ test("every case-study chapter references only resolvable local case assets", as
 
     assert.equal(references.length >= 2, true, `${chapter} should load shared local assets`);
     for (const reference of references) {
-      assert.match(reference, /^\/Portfoliogithubpages\/assets\//);
-      const sitePath = reference.replace("/Portfoliogithubpages/", "");
+      assert.match(reference, /^\/assets\//);
+      const sitePath = reference.slice(1);
       await access(path.join(siteRoot, sitePath));
     }
   }

@@ -7,7 +7,7 @@ This is a GitHub Pages portfolio powered by the [portfolYOU](https://github.com/
 1. Push the `main` branch to GitHub.
 2. In the repository, go to **Settings → Pages**.
 3. Under **Build and deployment**, select **Deploy from a branch**, then choose `main` and `/(root)`.
-4. Save the setting. The site will publish at <https://avsngh-git.github.io/Portfoliogithubpages/>.
+4. Save the setting. The site will publish at <https://avsngh-git.github.io/>.
 
 ## Customize it
 
@@ -24,7 +24,7 @@ bundle install
 bundle exec jekyll serve
 ```
 
-Open `http://localhost:4000/Portfoliogithubpages/`.
+Open `http://localhost:4000/`.
 
 ## Transformer Variants case study
 

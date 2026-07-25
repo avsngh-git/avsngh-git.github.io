@@ -1,8 +1,8 @@
 title: "Avinash Singh | Portfolio"
 description: "Statistician and machine-learning researcher focused on robust, interpretable data solutions."
 url: "https://avsngh-git.github.io"
-baseurl: "/Portfoliogithubpages"
-repository: "avsngh-git/Portfoliogithubpages"
+baseurl: ""
+repository: "avsngh-git/avsngh-git.github.io"
 remote_theme: "yousinix/portfolYOU@v2.3.0"
 open_new_tab: true
 
