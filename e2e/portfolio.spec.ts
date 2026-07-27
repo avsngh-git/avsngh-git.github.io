@@ -1,0 +1,166 @@
+import { expect, test } from "@playwright/test";
+
+test("homepage renders real content without loading case-study assets", async ({
+  page,
+}) => {
+  const caseStudyRequests: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.url().includes("plotly") ||
+      request.url().includes("/assets/data/transformer-variants/")
+    ) {
+      caseStudyRequests.push(request.url());
+    }
+  });
+
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Avinash Singh" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Selected Projects" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Contact" })).toBeVisible();
+  await expect(page.locator("form")).toHaveCount(0);
+  expect(caseStudyRequests).toEqual([]);
+});
+
+test("theme and mobile navigation remain usable", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Switch to light theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+  await page.getByRole("button", { name: "Open navigation menu" }).click();
+  await expect(
+    page.getByRole("navigation", { name: "Mobile navigation" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link", {
+      name: "Projects",
+    }),
+  ).toBeVisible();
+});
+
+test("case-study route initializes frozen interactive evidence", async ({ page }) => {
+  await page.goto("/projects/transformer-variants/");
+
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: /Transformer Variants: what changed/i,
+    }),
+  ).toBeVisible();
+  await expect(page.locator("#fixed-data-chart.js-plotly-plot")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.locator("#attention-chart.js-plotly-plot")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.locator("#variant-comparison tbody tr")).toHaveCount(10);
+  await expect(page.getByText(/Interactive data could not be loaded/)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "View source repository" })).toHaveAttribute(
+    "href",
+    /github\.com\/avsngh-git\/TransformerVariants\/commit\//,
+  );
+});
+
+test("case-study controls update every interactive evidence view", async ({
+  page,
+}) => {
+  await page.goto("/projects/transformer-variants/");
+  await expect(page.locator("#variant-comparison tbody tr")).toHaveCount(10, {
+    timeout: 20_000,
+  });
+
+  const wallClock = page.getByRole("button", { name: /Wall-clock/ });
+  await wallClock.click();
+  await expect(wallClock).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.locator("#learning-curves-chart-accessible-data-summary"),
+  ).toContainText("Elapsed training seconds");
+
+  const cachedDecode = page.getByRole("button", {
+    name: /Cached steady decode/,
+  });
+  await cachedDecode.click();
+  await expect(cachedDecode).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.locator("#throughput-chart-accessible-data-summary"),
+  ).toContainText("cachedDecodeTokensPerSecond");
+
+  await page.locator("#context-metric").selectOption("prefillTokensPerSecond");
+  await expect(page.locator("#context-chart-accessible-data-summary")).toContainText(
+    "prefillTokensPerSecond",
+  );
+
+  await page.locator("#retrieval-task").selectOption("needle");
+  await page
+    .locator("#retrieval-configuration")
+    .selectOption("rope_theta_100000");
+  await page.locator("#retrieval-distance").selectOption("far");
+  await page
+    .locator("#retrieval-metric")
+    .selectOption("mean_negative_log_likelihood");
+  await expect(
+    page.locator("#retrieval-chart-accessible-data-summary"),
+  ).toContainText(
+    "rope_theta_100000, needle, mean_negative_log_likelihood, and far distance",
+  );
+
+  await page.locator("#routing-variant").selectOption("moe_deep");
+  await expect(page.locator("#routing-status")).toContainText("MoE deep");
+  const lastLayer = await page
+    .locator("#routing-layer option")
+    .last()
+    .getAttribute("value");
+  expect(lastLayer).not.toBeNull();
+  await page.locator("#routing-layer").selectOption(lastLayer!);
+  await expect(page.locator("#routing-status")).toContainText(`layer ${lastLayer}`);
+
+  await page.locator("#attention-variant").selectOption("alibi");
+  await expect(page.locator("#attention-status")).toContainText("ALiBI");
+  const lastAttentionLayer = await page
+    .locator("#attention-layer option")
+    .last()
+    .getAttribute("value");
+  expect(lastAttentionLayer).not.toBeNull();
+  await page.locator("#attention-layer").selectOption(lastAttentionLayer!);
+  await expect(page.locator("#attention-status")).toContainText(
+    `layer ${lastAttentionLayer}`,
+  );
+  await page.locator("#attention-head").selectOption("0");
+  await expect(page.locator("#attention-status")).toContainText("head 0");
+  await page.locator("#attention-variant").selectOption("linear");
+  await expect(page.locator("#attention-status")).toContainText(
+    "does not define a conventional pairwise softmax attention matrix",
+  );
+  await expect(page.locator("#attention-chart")).toBeHidden();
+
+  const recipeSort = page.getByRole("button", { name: /^Recipe/ });
+  const firstRecipe = page.locator("#variant-comparison tbody tr").first().locator("td").first();
+  const initialRecipe = await firstRecipe.textContent();
+  await recipeSort.click();
+  await expect(recipeSort.locator("..")).toHaveAttribute("aria-sort", "ascending");
+  await expect(firstRecipe).not.toHaveText(initialRecipe ?? "");
+  await recipeSort.click();
+  await expect(recipeSort.locator("..")).toHaveAttribute("aria-sort", "descending");
+});
+
+test("legacy chapter routes redirect to matching consolidated anchors", async ({
+  page,
+}) => {
+  await page.goto("/projects/transformer-variants/results/");
+  await expect(page).toHaveURL(
+    /\/projects\/transformer-variants\/#results$/,
+  );
+  await expect(page.locator("#results")).toBeVisible();
+
+  await page.goto("/projects/transformer-variants.html");
+  await expect(page).toHaveURL(/\/projects\/transformer-variants\/$/);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: /Transformer Variants: what changed/i,
+    }),
+  ).toBeVisible();
+});

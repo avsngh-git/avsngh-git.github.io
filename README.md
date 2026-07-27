@@ -1,45 +1,66 @@
-# Av Singh's portfolio
+# Avinash Singh’s portfolio
 
-This is a GitHub Pages portfolio powered by the [portfolYOU](https://github.com/yousinix/portfolYOU) remote Jekyll theme.
+A React and TypeScript portfolio built with Vite and published at
+<https://avsngh-git.github.io/>.
 
-## Publish it
+The visual foundation is adapted from Yuji Sato’s
+[React Portfolio Template](https://github.com/yujisatojr/react-portfolio-template)
+at upstream commit `77536ad1d28c2a5bae79e68910eeb35866131451`. The application
+is maintained independently; third-party provenance is recorded in
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
 
-1. Push the `main` branch to GitHub.
-2. In the repository, go to **Settings → Pages**.
-3. Under **Build and deployment**, select **Deploy from a branch**, then choose `main` and `/(root)`.
-4. Save the setting. The site will publish at <https://avsngh-git.github.io/>.
+## Site structure
 
-## Customize it
+- `/` — template-style portfolio with About, Expertise, Career History, Projects,
+  and Contact sections.
+- `/projects/transformer-variants/` — the complete five-part Transformer Variants
+  research case study on one long-form route.
+- Former Jekyll routes remain as static redirects to the equivalent homepage or
+  case-study anchor.
 
-- Update your name, image, links, URL, and description in `_config.yml`.
-- Edit the introduction and skill lists in `pages/about.md` and `_data/`.
-- Add projects as Markdown files in `_projects/`.
+Legacy route definitions live in `redirects.json`; `npm run build` regenerates the
+small static redirect pages before Vite assembles the production site.
 
-## Preview locally
+The case-study prose lives under `src/content/transformer-variants/`. Frozen data,
+attention payloads, the local Plotly runtime, figures, and the résumé live under
+`public/assets/`. The heavy interactive runtime loads only on the case-study route.
 
-Install Ruby and Bundler, then run:
+## Local development
 
-```sh
-bundle install
-bundle exec jekyll serve
-```
-
-Open `http://localhost:4000/`.
-
-## Transformer Variants case study
-
-The project card and Overview route begin in `_projects/transformer-variants.html`.
-The five-part narrative lives in `_includes/transformer-variants/chapters/`, with a
-shared shell in `_layouts/transformer-case-study.html`. Frozen metrics and visualization
-assets are versioned under `assets/data/transformer-variants/` and
-`assets/transformer-variants/`. Source provenance, route structure, and editorial
-decisions are recorded in `docs/transformer-variants-case-study.md`.
-
-After building the site, validate both the frozen-data transforms and rendered Jekyll
-output with:
+Requires Node.js 22.12 or newer.
 
 ```sh
-node --test test/*.test.mjs
+npm ci
+npm run dev
 ```
 
-The theme is distributed under the [MIT License](https://github.com/yousinix/portfolYOU/blob/master/LICENSE).
+The development server prints its local URL.
+
+## Verification
+
+```sh
+npm run lint
+npm test
+npm run build
+npm run test:e2e
+```
+
+`npm run test:e2e` requires a Playwright Chromium installation:
+
+```sh
+npx playwright install chromium
+```
+
+Unit and component tests cover portfolio content, route contracts, theme behavior,
+and the frozen-data transforms used by the browser runtime. Playwright checks the
+production homepage, mobile navigation, lazy asset boundary, every case-study control,
+and legacy redirects.
+
+## Deployment
+
+Pushes to `main` run the complete check, build, and browser-test pipeline in GitHub
+Actions. The workflow uploads `dist/` as the GitHub Pages artifact and deploys it to
+the `github-pages` environment. Compiled output is not committed.
+
+In repository **Settings → Pages**, the publishing source must be set to
+**GitHub Actions** before the first React deployment.

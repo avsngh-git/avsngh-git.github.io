@@ -1,0 +1,58 @@
+[
+  {
+    "source": "/about/",
+    "target": "/#about",
+    "output": "about/index.html",
+    "title": "About | Avinash Singh",
+    "label": "Continue to About"
+  },
+  {
+    "source": "/resume/",
+    "target": "/assets/resume/Avi_resume_statisticaldatascience.pdf",
+    "output": "resume/index.html",
+    "title": "Résumé | Avinash Singh",
+    "label": "Open résumé"
+  },
+  {
+    "source": "/projects/",
+    "target": "/#projects",
+    "output": "projects/index.html",
+    "title": "Projects | Avinash Singh",
+    "label": "Continue to Projects"
+  },
+  {
+    "source": "/projects/transformer-variants.html",
+    "target": "/projects/transformer-variants/",
+    "output": "projects/transformer-variants.html",
+    "title": "Transformer Variants",
+    "label": "Continue to Transformer Variants"
+  },
+  {
+    "source": "/projects/transformer-variants/architecture/",
+    "target": "/projects/transformer-variants/#architecture",
+    "output": "projects/transformer-variants/architecture/index.html",
+    "title": "Transformer architecture choices",
+    "label": "Continue to Architecture"
+  },
+  {
+    "source": "/projects/transformer-variants/experiments/",
+    "target": "/projects/transformer-variants/#experiments",
+    "output": "projects/transformer-variants/experiments/index.html",
+    "title": "Transformer experimental design",
+    "label": "Continue to Experimental Design"
+  },
+  {
+    "source": "/projects/transformer-variants/results/",
+    "target": "/projects/transformer-variants/#results",
+    "output": "projects/transformer-variants/results/index.html",
+    "title": "Transformer results",
+    "label": "Continue to Results"
+  },
+  {
+    "source": "/projects/transformer-variants/internals/",
+    "target": "/projects/transformer-variants/#internals",
+    "output": "projects/transformer-variants/internals/index.html",
+    "title": "Transformer internals and engineering",
+    "label": "Continue to Internals and Engineering"
+  }
+]

@@ -1,13 +1,27 @@
-# Jekyll build output
+# Dependencies and local caches
+node_modules/
+.npm/
+
+# Production and test output
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# TypeScript and Vite caches
+*.tsbuildinfo
+node_modules/.tmp/
+
+# Retired Jekyll artifacts that may remain in older local checkouts
 _site/
 .sass-cache/
 .jekyll-cache/
 .jekyll-metadata
-
-# Ruby dependencies
 .bundle/
 vendor/
 Gemfile.lock
 
 # Editor and OS files
 .DS_Store
+.idea/
+.vscode/

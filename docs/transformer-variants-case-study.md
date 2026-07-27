@@ -6,8 +6,8 @@ nav_exclude: true
 
 ## Purpose
 
-Add a concise card to the portfolio Projects page and a dedicated recruiter-facing
-case study titled **Transformer Variants: A Controlled 50-Run Study**. The primary
+Add a concise card to the portfolio Projects section and a dedicated recruiter-facing
+React case study titled **Transformer Variants: A Controlled 50-Run Study**. The primary
 audience is ML research and engineering recruiters and hiring
 managers. The central claim is that this is an end-to-end experimental platform, not
 just a collection of model classes.
@@ -18,11 +18,11 @@ Primary experiment: ten recipes × five seeds × 499,974,144 tokens = 50 runs an
 24,998,707,200 processed training tokens. Training provenance starts at `537da5f`;
 the publication footer records the frozen evaluation/export commit.
 
-## Five-chapter structure
+## Five-section structure
 
-The case study is a persistent five-page series rather than one long document. Every
-chapter repeats the numbered navigation, current-page state, provenance, and previous
-or next action.
+The case study is one long-form page with five anchored sections. Persistent numbered
+navigation jumps between the sections while shared provenance remains visible at the
+page boundary.
 
 1. **Overview** — research question, scale, three mechanism-led findings, and a map to
    the evidence.
@@ -38,8 +38,9 @@ or next action.
    explorer, MoE utilization and aligned cross-seed routing stability, system
    decisions, fault tolerance, and limitations.
 
-Routes are `/projects/transformer-variants`, followed by `/architecture/`,
-`/experiments/`, `/results/`, and `/internals/` below that project path.
+The canonical route is `/projects/transformer-variants/`, with `#architecture`,
+`#experiments`, `#results`, and `#internals` anchors. Former chapter routes are static
+redirects to those anchors.
 
 ## Explanatory standard
 
@@ -67,9 +68,9 @@ sortable comparison table, and lazy attention payloads. Use native MathML, acces
 labels, a colorblind-safe palette, responsive layouts, and a versioned local Plotly
 runtime rather than a chart CDN or Python web server.
 
-The visual system inherits the original portfolYOU page typography, dark/light theme,
-spacing, and Bootstrap blue. Neutral surfaces and borders replace the former orange
-and green research-dashboard treatment.
+The visual system inherits the React Portfolio Template typography, dark/light theme,
+spacing, and purple identity while retaining the case study’s blue interaction cues,
+neutral surfaces, and accessible borders.
 
 ## Training recipe to explain
 
@@ -102,7 +103,7 @@ and green research-dashboard treatment.
   Student-t confidence intervals.
 - Explicit unsupported states rather than fabricated measurements.
 - Atomic asynchronous checkpoints, integrity verification, and exact-state recovery.
-- Frontend-agnostic JSON and interactive Plotly export separated from Jekyll presentation.
+- Frontend-agnostic JSON and interactive Plotly export separated from React presentation.
 
 ## Required limitations
 
@@ -119,7 +120,7 @@ and green research-dashboard treatment.
 
 ## Card and identity
 
-Card tags: `Transformers`, `PyTorch`, `CUDA`, `FlashAttention`, `FineWeb-Edu`, `Jekyll`.
+Card tags: `Transformers`, `PyTorch`, `CUDA`, `FlashAttention`, `FineWeb-Edu`.
 Use a custom static thumbnail. Place a small, accessible GitHub icon on the card and a
 prominent source action in the shared case-study footer. Retain portfolio typography
 and navigation with page-scoped styles. Use first-person voice for implementation
@@ -127,18 +128,22 @@ ownership and neutral scientific language for experimental claims.
 
 ## Implementation map
 
-- `_layouts/transformer-case-study.html` owns the shared assets and shell.
-- `_includes/transformer-variants/series-header.html` and `series-footer.html` own the
-  repeated five-chapter navigation and provenance.
-- `_includes/transformer-variants/chapters/` contains one narrative include per route.
-- `pages/transformer-variants-*.html` defines the four subchapter routes; the project
-  collection item defines Overview.
-- `projects.html` and `_includes/project-index-local.html` intentionally avoid the
-  remote theme's colliding `pages/projects.html` source path.
+- `src/pages/CaseStudyPage.tsx` owns the React route, shared navigation, and provenance.
+- `src/content/transformer-variants/` contains the five authoritative narrative
+  sections as build-time local HTML.
+- `src/features/transformer-variants/` owns the lazy runtime boundary and shared asset
+  configuration; `public/assets/js/transformer-case-study-data.mjs` is the directly
+  tested production data-transform module.
+- `public/assets/data/transformer-variants/` and `public/assets/transformer-variants/`
+  contain frozen evidence and static figures.
+- `redirects.json` defines the former Jekyll paths; the build generates their static
+  redirect pages, including the old `.html` project URL.
 
 ## Confirmed public test seams
 
-1. Rendered Jekyll Projects card and case-study output.
-2. Frozen visualization data transformed by local JavaScript.
+1. Rendered React homepage and consolidated case-study output.
+2. Frozen visualization data transformed by the tested production browser module.
+3. Browser-level theme, mobile-navigation, lazy-loading, chart-runtime, every
+   case-study selector, sortable results, and redirect behavior.
 
 Original review baseline: `9807cc4246e08830bbb8f7c320b64e43f976da71`.
