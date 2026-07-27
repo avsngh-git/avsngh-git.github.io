@@ -1,9 +1,14 @@
-import {
+const moduleUrl = new URL(import.meta.url);
+const assetVersion = moduleUrl.searchParams.get("v") || "";
+const helperUrl = new URL("./transformer-case-study-data.mjs", moduleUrl);
+if (assetVersion) helperUrl.searchParams.set("v", assetVersion);
+
+const {
   attentionAssetFor,
   buildComparisonRows,
   contextSeries,
   metricSeries,
-} from "./transformer-case-study-data.mjs";
+} = await import(helperUrl.href);
 
 const root = document.querySelector("#transformer-case-study");
 if (!root) throw new Error("Transformer Variants case-study root was not found.");
@@ -32,8 +37,12 @@ const chartConfig = {
 };
 
 async function fetchJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Could not load " + url + " (" + response.status + ").");
+  const requestUrl = new URL(url, window.location.href);
+  if (assetVersion) requestUrl.searchParams.set("v", assetVersion);
+  const response = await fetch(requestUrl);
+  if (!response.ok) {
+    throw new Error("Could not load " + requestUrl.href + " (" + response.status + ").");
+  }
   return response.json();
 }
 

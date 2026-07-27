@@ -2,9 +2,14 @@
 layout: page
 ---
 
+{% assign case_asset_version = site.time | date: '%s' %}
+{% if site.github.build_revision and site.github.build_revision != '' %}
+  {% assign case_asset_version = site.github.build_revision %}
+{% endif %}
+
 <link
   data-case-asset
-  href="{{ '/assets/css/transformer-case-study.css' | relative_url }}"
+  href="{{ '/assets/css/transformer-case-study.css' | relative_url }}?v={{ case_asset_version }}"
   rel="stylesheet"
 >
 
@@ -12,11 +17,12 @@ layout: page
   id="transformer-case-study"
   class="tvc"
   data-case-chapter="{{ page.case_chapter }}"
-  data-summary-url="{{ '/assets/data/transformer-variants/summary.json' | relative_url }}"
-  data-internals-url="{{ '/assets/data/transformer-variants/model_internals.json' | relative_url }}"
-  data-retrieval-url="{{ '/assets/data/transformer-variants/retrieval.json' | relative_url }}"
-  data-routing-url="{{ '/assets/data/transformer-variants/moe_routing.json' | relative_url }}"
-  data-attention-index-url="{{ '/assets/data/transformer-variants/attention/attention_patterns.json' | relative_url }}"
+  data-asset-version="{{ case_asset_version }}"
+  data-summary-url="{{ '/assets/data/transformer-variants/summary.json' | relative_url }}?v={{ case_asset_version }}"
+  data-internals-url="{{ '/assets/data/transformer-variants/model_internals.json' | relative_url }}?v={{ case_asset_version }}"
+  data-retrieval-url="{{ '/assets/data/transformer-variants/retrieval.json' | relative_url }}?v={{ case_asset_version }}"
+  data-routing-url="{{ '/assets/data/transformer-variants/moe_routing.json' | relative_url }}?v={{ case_asset_version }}"
+  data-attention-index-url="{{ '/assets/data/transformer-variants/attention/attention_patterns.json' | relative_url }}?v={{ case_asset_version }}"
   data-attention-base-url="{{ '/assets/data/transformer-variants/attention/' | relative_url }}"
 >
   {% include transformer-variants/series-header.html %}
@@ -31,11 +37,11 @@ layout: page
 {% if page.case_chapter == 'results' or page.case_chapter == 'internals' %}
   <script
     data-case-asset
-    src="{{ '/assets/js/plotly.min.js' | relative_url }}"
+    src="{{ '/assets/js/plotly.min.js' | relative_url }}?v={{ case_asset_version }}"
   ></script>
   <script
     data-case-asset
-    src="{{ '/assets/js/transformer-case-study.mjs' | relative_url }}"
+    src="{{ '/assets/js/transformer-case-study.mjs' | relative_url }}?v={{ case_asset_version }}"
     type="module"
   ></script>
 {% endif %}

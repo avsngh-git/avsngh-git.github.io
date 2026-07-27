@@ -122,6 +122,40 @@ test("case study loads a local Plotly runtime before its chart module", async ()
   await access(path.join(siteRoot, "assets/data/transformer-variants/moe_routing.json"));
 });
 
+test("every runtime dependency shares one deployment cache version", async () => {
+  const results = await chapterHtml("results");
+  const internals = await chapterHtml("internals");
+  const version = results.match(
+    /\/assets\/js\/transformer-case-study\.mjs\?v=([^"]+)/,
+  )?.[1];
+
+  assert.ok(version, "the chart module must carry a deployment version");
+  for (const html of [results, internals]) {
+    for (const asset of [
+      "assets/css/transformer-case-study.css",
+      "assets/js/plotly.min.js",
+      "assets/js/transformer-case-study.mjs",
+      "assets/data/transformer-variants/summary.json",
+      "assets/data/transformer-variants/model_internals.json",
+      "assets/data/transformer-variants/retrieval.json",
+      "assets/data/transformer-variants/moe_routing.json",
+      "assets/data/transformer-variants/attention/attention_patterns.json",
+    ]) {
+      assert.match(
+        html,
+        new RegExp(`/${asset.replaceAll(".", "\\.")}\\?v=${version}`),
+        `${asset} must use the same deployment version`,
+      );
+    }
+  }
+  const source = await readFile(
+    path.join(root, "assets/js/transformer-case-study.mjs"),
+    "utf8",
+  );
+  assert.match(source, /searchParams\.set\("v", assetVersion\)/);
+  assert.match(source, /await import\(helperUrl\.href\)/);
+});
+
 test("every case-study chapter references only resolvable local case assets", async () => {
   for (const [chapter] of chapters) {
     const html = await chapterHtml(chapter);
@@ -132,7 +166,7 @@ test("every case-study chapter references only resolvable local case assets", as
     assert.equal(references.length >= 1, true, `${chapter} should load shared local assets`);
     for (const reference of references) {
       assert.match(reference, /^\/assets\//);
-      const sitePath = reference.slice(1);
+      const sitePath = new URL(reference, "https://portfolio.test").pathname.slice(1);
       await access(path.join(siteRoot, sitePath));
     }
   }
