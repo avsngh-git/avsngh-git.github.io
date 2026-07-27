@@ -6,24 +6,26 @@
     corpus, token budget, optimizer, or evaluation slice. I treated the recipe as the
     intended intervention and the rest of the pipeline as controlled infrastructure.
     That does not make every pair a perfect ablation—Vanilla and Modern deliberately
-    differ in several components, and MoE missed parameter parity—but it makes those
-    deviations visible and keeps accidental variation out of the result.
+    differ in several components—but it makes those bundled changes visible and keeps
+    accidental variation out of the result. The MoE expert width was reduced so its
+    top-two active FFN parameters match the dense SwiGLU FFN within 0.1%.
   </p>
   <p>
     The main configuration uses eight Transformer blocks, width 512, eight query
     heads, 1,024-token sequences, tied token/output embeddings, no dropout, and the
-    GPT-2 vocabulary. Every recipe trains for 15,000 optimizer steps with an effective
-    batch of 65,536 tokens, or exactly 983,040,000 tokens per run. Seeds 42, 137, and
-    2024 provide independently initialized checkpoints for the primary estimates.
+    GPT-2 vocabulary. Every recipe trains for 7,629 optimizer steps with an effective
+    batch of 65,536 tokens, or exactly 499,974,144 tokens per run. Seeds 42, 137,
+    2,024, 31,415, and 271,828 provide independently initialized checkpoints for the
+    primary estimates.
   </p>
 </section>
 
 <figure class="tvc-figure tvc-wide-figure">
-  <div class="tvc-system-flow" role="img" aria-label="FineWeb-Edu moves through streaming preparation, shared token shards, ten registered recipes, three-seed training, fixed evaluations, and frozen publication assets">
+  <div class="tvc-system-flow" role="img" aria-label="FineWeb-Edu moves through streaming preparation, shared token shards, ten registered recipes, five-seed training, fixed evaluations, and frozen publication assets">
     <div><span>01</span><strong>Stream</strong><small>FineWeb-Edu documents</small></div><b>→</b>
     <div><span>02</span><strong>Prepare</strong><small>token shards + manifest</small></div><b>→</b>
     <div><span>03</span><strong>Build</strong><small>10 registered recipes</small></div><b>→</b>
-    <div><span>04</span><strong>Train</strong><small>3 seeds × 983M tokens</small></div><b>→</b>
+    <div><span>04</span><strong>Train</strong><small>5 seeds × 500M tokens</small></div><b>→</b>
     <div><span>05</span><strong>Evaluate</strong><small>quality · context · speed</small></div><b>→</b>
     <div><span>06</span><strong>Publish</strong><small>versioned JSON + figures</small></div>
   </div>
@@ -104,7 +106,7 @@
       <tr><th>Effective batch</th><td>8 sequences × 8 accumulation steps × 1,024 tokens = 65,536 tokens/update</td></tr>
       <tr><th>Precision</th><td>bfloat16 autocast; sensitive reductions remain float32 where required</td></tr>
       <tr><th>Stability</th><td>Global gradient norm clipped at 1.0; non-finite updates abort before optimizer mutation</td></tr>
-      <tr><th>Budget</th><td>15,000 optimizer steps = 983,040,000 tokens per run</td></tr>
+      <tr><th>Budget</th><td>7,629 optimizer steps = 499,974,144 tokens per run</td></tr>
       <tr><th>MoE terms</th><td>Load balance α = 0.01; router z-loss β = 0.001</td></tr>
     </tbody></table>
   </div>
@@ -138,7 +140,7 @@
       with target difficulty. Instead, the evaluator draws eight fixed validation
       windows per checkpoint and always scores the same final 256 target tokens. At
       1K, 2K, and 4K, only the amount of preceding history changes. Each checkpoint
-      first produces a mean over windows; the error bars then use the three independent
+      first produces a mean over windows; the error bars then use the five independent
       checkpoint seeds as the uncertainty units.
     </p>
     <p>
@@ -175,12 +177,15 @@
     its own reference window.
   </p>
   <aside class="tvc-callout">
-    <h3>Why this affects scientific validity</h3>
+    <h3>The recovery path was tested, not merely designed</h3>
     <p>
-      Fault tolerance is not merely uptime engineering. Exact recovery protects the
-      independent-seed design, the consumed-token denominator, and the claim that each
-      checkpoint experienced the same training protocol. Infrastructure state is part
-      of the experimental state.
+      In a controlled failure demonstration, I corrupted the newest checkpoint,
+      detected the checksum mismatch, fell back from step 2 to the verified step-1
+      checkpoint, and replayed the interrupted update. The resumed and uninterrupted
+      runs ended with exactly the same loss and a maximum absolute parameter
+      difference of 0.0. Exact recovery therefore protects the independent-seed
+      design and consumed-token denominator; infrastructure state is part of the
+      experimental state.
     </p>
   </aside>
 </section>

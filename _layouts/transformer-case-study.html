@@ -13,6 +13,9 @@ layout: page
   class="tvc"
   data-case-chapter="{{ page.case_chapter }}"
   data-summary-url="{{ '/assets/data/transformer-variants/summary.json' | relative_url }}"
+  data-internals-url="{{ '/assets/data/transformer-variants/model_internals.json' | relative_url }}"
+  data-retrieval-url="{{ '/assets/data/transformer-variants/retrieval.json' | relative_url }}"
+  data-routing-url="{{ '/assets/data/transformer-variants/moe_routing.json' | relative_url }}"
   data-attention-index-url="{{ '/assets/data/transformer-variants/attention/attention_patterns.json' | relative_url }}"
   data-attention-base-url="{{ '/assets/data/transformer-variants/attention/' | relative_url }}"
 >
@@ -25,8 +28,14 @@ layout: page
   {% include transformer-variants/series-footer.html %}
 </article>
 
-<script
-  data-case-asset
-  src="{{ '/assets/js/transformer-case-study.mjs' | relative_url }}"
-  type="module"
-></script>
+{% if page.case_chapter == 'results' or page.case_chapter == 'internals' %}
+  <script
+    data-case-asset
+    src="{{ '/assets/js/plotly.min.js' | relative_url }}"
+  ></script>
+  <script
+    data-case-asset
+    src="{{ '/assets/js/transformer-case-study.mjs' | relative_url }}"
+    type="module"
+  ></script>
+{% endif %}

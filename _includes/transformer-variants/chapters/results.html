@@ -2,10 +2,10 @@
   <p class="tvc-section-kicker">How to read this chapter</p>
   <h2>The ranking changes when the resource changes</h2>
   <p class="tvc-lead-paragraph">
-    “Best model” is under-specified. Full MoE is best after a fixed number of training
-    tokens. Vanilla is fastest in the measured short-generation path. SWA leads 4K
-    prompt prefill. ALiBI is most robust on the 4K tail-quality test. Those statements
-    can all be true because they optimize different quantities.
+    “Best model” is under-specified. Fixed-data quality, cached decode, uncached
+    generation, long-prompt prefill, stored parameters, active parameters, and
+    extrapolation stability are different endpoints. The same recipe need not lead
+    all of them, and an unsupported capability is kept distinct from a measured zero.
   </p>
   <p>
     The figures below deliberately preserve that multidimensional result. Every chart
@@ -13,6 +13,42 @@
     a time so labels and seed traces remain legible. Interactive controls are marked in
     blue and announce exactly what changes when selected.
   </p>
+</section>
+
+<section class="tvc-section" id="fixed-data-results">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Primary quality endpoint</p>
+    <h2>Five seeds separate a repeatable effect from a lucky initialization</h2>
+    <p>
+      Every recipe processed the same 499,974,144 training tokens per seed. Large
+      markers show the five-seed mean, open markers show the individual runs, and
+      error bars show the two-sided 95% Student-t confidence interval. Hover over any
+      point to inspect the underlying seed or aggregate.
+    </p>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="fixed-data-figure">
+    <div
+      id="fixed-data-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive fixed-data validation loss with five seed observations and confidence intervals"
+    ><p class="tvc-loading">Loading five-seed quality estimates…</p></div>
+    <figcaption class="figure-interpretation">
+      <h3>What this figure supports</h3>
+      <p>
+        The chart tests a deliberately narrow claim: under one shared corpus,
+        optimizer, active-parameter target, and token budget, which complete recipe
+        assigns more probability to held-out next tokens? Showing all five seeds
+        prevents a tiny rank difference from masquerading as a robust result.
+      </p>
+      <p>
+        It does not isolate the effect of RoPE, RMSNorm, SwiGLU, FlashAttention, or
+        routing individually. Vanilla versus Modern is a bundled recipe comparison;
+        component-level explanations come from published ablations and the separate
+        surgical-ablation plan, not from subtracting these two bars.
+      </p>
+    </figcaption>
+  </figure>
 </section>
 
 <section class="tvc-section">
@@ -39,18 +75,12 @@
   </div>
 
   <figure class="tvc-figure tvc-wide-figure" id="learning-curves-figure">
-    <div class="tvc-learning-plots">
-      <a href="{{ '/assets/transformer-variants/plots/learning_curves_tokens.png' | relative_url }}" target="_blank" rel="noopener noreferrer" data-learning-plot-link="tokens">
-        <img data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_tokens.png' | relative_url }}" data-learning-plot="tokens" alt="Validation loss against training tokens for all Transformer recipes">
-      </a>
-      <a href="{{ '/assets/transformer-variants/plots/learning_curves_wallclock.png' | relative_url }}" target="_blank" rel="noopener noreferrer" data-learning-plot-link="wallclock" hidden>
-        <img data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_wallclock.png' | relative_url }}" data-learning-plot="wallclock" alt="Validation loss against elapsed training time for all Transformer recipes">
-      </a>
-      <a href="{{ '/assets/transformer-variants/plots/learning_curves_flops.png' | relative_url }}" target="_blank" rel="noopener noreferrer" data-learning-plot-link="flops" hidden>
-        <img data-case-asset src="{{ '/assets/transformer-variants/plots/learning_curves_flops.png' | relative_url }}" data-learning-plot="flops" alt="Validation loss against cumulative estimated floating-point operations for all Transformer recipes">
-      </a>
-    </div>
-    <a class="tvc-figure-zoom" href="{{ '/assets/transformer-variants/plots/learning_curves_tokens.png' | relative_url }}" target="_blank" rel="noopener noreferrer" data-learning-zoom><span aria-hidden="true">↗</span> Open current plot at full resolution</a>
+    <div
+      id="learning-curves-chart"
+      class="tvc-plotly-chart tvc-plotly-chart-tall"
+      role="img"
+      aria-label="Interactive validation-loss learning curves for ten Transformer recipes"
+    ><p class="tvc-loading">Loading five-seed learning curves…</p></div>
     <figcaption class="figure-interpretation">
       <h3>What the curves establish</h3>
       <p>
@@ -68,6 +98,13 @@
         retain operational advantages. The preferred recipe depends on whether data,
         elapsed accelerator time, or modeled compute is the binding constraint.
       </p>
+      <p>
+        These curves use the validation snapshots recorded during training so the
+        same checkpoint steps can be aligned on all three horizontal axes. The
+        primary fixed-data figure above re-evaluates every final checkpoint on one
+        fresh 50-batch protocol; its endpoint is authoritative when the two displays
+        differ slightly.
+      </p>
     </figcaption>
   </figure>
 </section>
@@ -78,10 +115,12 @@
     <h2>A useful frontier is more informative than a single ordered list</h2>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="pareto-figure">
-    <a href="{{ '/assets/transformer-variants/plots/pareto_flops_val_loss.png' | relative_url }}" target="_blank" rel="noopener noreferrer">
-      <img data-case-asset src="{{ '/assets/transformer-variants/plots/pareto_flops_val_loss.png' | relative_url }}" alt="Validation loss versus cumulative FLOPs with Pareto-optimal Transformer variants highlighted">
-    </a>
-    <a class="tvc-figure-zoom" href="{{ '/assets/transformer-variants/plots/pareto_flops_val_loss.png' | relative_url }}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> Open plot at full resolution</a>
+    <div
+      id="pareto-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive validation loss versus cumulative training FLOPs"
+    ><p class="tvc-loading">Loading compute-quality frontier…</p></div>
     <figcaption class="figure-interpretation">
       <h3>What the Pareto frontier means</h3>
       <p>
@@ -125,23 +164,124 @@
     </select>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="context-figure">
-    <div id="context-chart" class="tvc-chart" aria-live="polite"><p class="tvc-loading">Loading frozen context measurements…</p></div>
-    <noscript><p>ALiBI: 56.07 → 58.74 perplexity; SWA: 58.95 → 58.93; Modern: 39.80 → 553.94; Linear: 50.10 → 1,311.78.</p></noscript>
+    <div
+      id="context-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive paired-tail perplexity and prefill throughput by context length"
+      aria-live="polite"
+    ><p class="tvc-loading">Loading frozen context measurements…</p></div>
+    <noscript><p>The interactive five-seed context measurements require JavaScript; all raw values remain available in the linked project repository.</p></noscript>
     <figcaption class="figure-interpretation">
       <h3>Why the quality leaders reverse</h3>
       <p>
-        At 1K, full MoE and Modern are strongest. At 4K, ALiBI and pure SWA are strongest
-        by a wide margin. ALiBI preserves a head-specific distance penalty that remains
-        structurally defined beyond training. SWA preserves a fixed local problem: the
-        outer container grows, but no query sees more than 256 positions. Those are
-        different kinds of robustness and should not be conflated.
+        At 1K, the three MoE placements are strongest among the extrapolatable
+        recipes, at 43.70–45.99 tail perplexity; Modern is the leading dense
+        full-attention recipe at 49.96. At 4K, ALiBI leads at
+        <strong>74.35 ± 1.14</strong>, narrowly ahead of pure SWA at
+        <strong>75.09 ± 0.31</strong>. ALiBI preserves a head-specific distance
+        penalty that remains structurally defined beyond training. SWA preserves a
+        fixed local problem: the outer container grows, but no query sees more than
+        256 positions. Those are different kinds of robustness and should not be
+        conflated.
       </p>
       <p>
         Global RoPE recipes—including the higher-capacity MoE family—show severe
         degradation. This is evidence that more capacity cannot automatically correct
-        a positional distribution shift. Interleaved SWA sits between pure local and
-        full global behavior: its periodic global layers improve connectivity and also
-        make the model more sensitive to the unseen length range.
+        a positional distribution shift: full MoE reaches 404.51 at 4K and Modern
+        410.08. Interleaved SWA sits between pure local and full global behavior,
+        rising from 75.87 to 96.95. Error bars are sample standard deviations across
+        five checkpoint seeds; each checkpoint estimate averages the same eight
+        validation windows. The test measures paired-tail calibration, not retrieval.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="tvc-section" id="retrieval-results">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Distant-information access</p>
+    <h2>Stable perplexity is not proof that a model retrieved a distant fact</h2>
+    <p>
+      Paired-tail perplexity measures whether the same final targets remain calibrated
+      as the prefix grows. The zero-shot passkey and needle probes ask a stricter
+      question: can the model place probability on a specific answer introduced at a
+      controlled distance? No task-specific fine-tuning is used. Exact top-1/top-5
+      accuracy is shown alongside answer-token probability and negative log-likelihood
+      so floor effects remain visible rather than being hidden.
+    </p>
+  </div>
+  <div class="tvc-interactive-prompt">
+    <span class="tvc-prompt-icon" aria-hidden="true">⌁</span>
+    <div><strong>Interactive retrieval diagnostic</strong><p>Switch the task and scoring rule; hover to inspect five-seed uncertainty at each context length.</p></div>
+  </div>
+  <div class="tvc-control-panel tvc-attention-controls">
+    <label>Choose task
+      <select id="retrieval-task">
+        <option value="passkey">Passkey retrieval</option>
+        <option value="needle">Needle-in-a-haystack</option>
+      </select>
+    </label>
+    <label>Choose positional setting
+      <select id="retrieval-configuration">
+        <option value="rope_standard">Native / RoPE base 10,000</option>
+        <option value="rope_theta_100000">Native / RoPE base 100,000</option>
+      </select>
+    </label>
+    <label>Choose fact distance
+      <select id="retrieval-distance">
+        <option value="aggregate">All tested distances</option>
+        <option value="near">Nearest distance</option>
+        <option value="middle">Middle distance</option>
+        <option value="far">Farthest distance</option>
+      </select>
+    </label>
+    <label>Choose score
+      <select id="retrieval-metric">
+        <option value="accuracy">Exact top-1 accuracy</option>
+        <option value="top5_accuracy">Exact top-5 accuracy</option>
+        <option value="mean_expected_probability">Answer-token probability</option>
+        <option value="mean_negative_log_likelihood">Answer-token NLL</option>
+      </select>
+    </label>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="retrieval-figure">
+    <div
+      id="retrieval-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive zero-shot passkey and needle retrieval by context length"
+    ><p class="tvc-loading">Loading five-seed retrieval probes…</p></div>
+    <figcaption class="figure-interpretation">
+      <h3>What this adds to the long-context claim</h3>
+      <p>
+        The result is a useful negative control: exact top-1 and top-5 accuracy are
+        zero for every supported recipe, context length, task, distance, and RoPE
+        base. The larger 100,000 base does not rescue exact retrieval. Answer-token
+        probabilities remain visible so the floor is auditable, but they stay near
+        vocabulary-scale prior probabilities and do not show a consistent
+        distance-response pattern. This experiment therefore supports no claim of
+        usable zero-shot distant-fact retrieval at this model scale.
+      </p>
+      <p>
+        A flat perplexity curve can result from ignoring distant context, especially
+        for a local-attention model. Retrieval accuracy and answer probability test
+        whether usable information actually travels from the injected fact to the
+        prediction position. Results are separated by task and context so a single
+        average cannot conceal a distance failure.
+      </p>
+      <p>
+        The positional selector is a no-training intervention. It changes only the
+        RoPE frequency base at evaluation time; ALiBI and learned-absolute recipes
+        remain on their native mechanisms. If the larger base helps a RoPE recipe at
+        4K, that is evidence about inference-time phase scaling—not evidence that the
+        model learned long-context behavior during its 1K-token training.
+      </p>
+      <p>
+        These are synthetic diagnostics on approximately 50M-active-parameter,
+        non-instruction-tuned language models. Failure does not prove the architecture
+        can never retrieve; success does not establish broad long-document reasoning.
+        The figure supports only zero-shot access under the displayed protocol.
       </p>
     </figcaption>
   </figure>
@@ -150,12 +290,14 @@
 <section class="tvc-section" id="throughput-results">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Serving behavior</p>
-    <h2>Generation and prefill exercise different hardware paths</h2>
+    <h2>Training, generation, decode, and prefill exercise different hardware paths</h2>
     <p>
+      Training combines forward, backward, optimizer, and gradient-accumulation work.
       Autoregressive generation advances one token at a time and benefits strongly
-      from reusable key/value state. Prefill processes all prompt tokens in parallel
-      and exposes the attention operator's behavior at long sequence lengths. A single
-      throughput number cannot describe both workloads.
+      from reusable key/value state; steady-state decode removes prompt setup from
+      that timing. Prefill processes prompt tokens in parallel and exposes the
+      attention operator at long sequence lengths. One throughput number cannot
+      describe all four workloads.
     </p>
   </div>
   <div class="tvc-interactive-prompt">
@@ -163,27 +305,47 @@
     <div><strong>Interactive ranking</strong><p>Select a workload. Bars reorder automatically so the measured leader is always at the top.</p></div>
   </div>
   <div class="tvc-control-row tvc-control-panel" role="group" aria-label="Select throughput workload">
-    <button class="is-active" type="button" data-throughput-metric="generationTokensPerSecond"><span>01</span> Short generation</button>
-    <button type="button" data-throughput-metric="prefillTokensPerSecond4k"><span>02</span> 4K prompt prefill</button>
+    <button class="is-active" type="button" data-throughput-metric="trainingTokensPerSecond"><span>01</span> Training throughput</button>
+    <button type="button" data-throughput-metric="cachedGenerationTokensPerSecond"><span>02</span> Cached end-to-end</button>
+    <button type="button" data-throughput-metric="cachedDecodeTokensPerSecond"><span>03</span> Cached steady decode</button>
+    <button type="button" data-throughput-metric="uncachedGenerationTokensPerSecond"><span>04</span> Uncached generation</button>
+    <button type="button" data-throughput-metric="prefillTokensPerSecond4k"><span>05</span> 4K prompt prefill</button>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="throughput-figure">
-    <div id="throughput-chart" class="tvc-bar-chart" aria-live="polite"><p class="tvc-loading">Loading frozen throughput measurements…</p></div>
-    <noscript><p>Generation leaders: Vanilla 454.55 tokens/s, ALiBI 381.77, Modern 310.50. 4K prefill leaders: SWA 253K tokens/s, ALiBI 243K, GQA 240K.</p></noscript>
+    <div
+      id="throughput-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive throughput ranking by training and serving workload"
+      aria-live="polite"
+    ><p class="tvc-loading">Loading frozen throughput measurements…</p></div>
+    <noscript><p>The cache-aware serving matrix requires JavaScript; raw timings and unsupported states remain available in the linked project repository.</p></noscript>
     <figcaption class="figure-interpretation">
       <h3>What realized speed adds to complexity analysis</h3>
       <p>
-        Vanilla leads the measured short-generation path, showing the value of a mature
-        dense operator and supported cache route. SWA leads 4K prefill because its
-        window bounds attention work; ALiBI and GQA also use efficient FlashAttention
-        paths. Full MoE and causal linear attention are slow for different reasons:
-        irregular expert dispatch in one case, serial unfused prefix recurrence in the
-        other.
+        Vanilla leads cached short generation at <strong>512.8 tokens/s</strong>,
+        followed by ALiBI at 364.4 and Modern at 336.2. Pure SWA leads 4K prefill at
+        <strong>204.9K tokens/s</strong>; SWA interleaved, GQA, and ALiBI follow at
+        176.0K, 168.9K, and 160.1K. Every recipe produced a reusable cache in this
+        implementation. Full MoE and causal linear attention remain slow for
+        different reasons: irregular expert dispatch in one case, serial unfused
+        prefix recurrence in the other.
       </p>
       <p>
         The conclusion is scoped to an NVIDIA L4-24Q, these tensor shapes, and these
         implementations. It does not invalidate theoretical scaling. It demonstrates
         that FLOPs, kernel maturity, synchronization, cache layout, memory traffic, and
         occupancy must all be measured before an efficiency claim becomes operational.
+      </p>
+      <p>
+        Training bars aggregate five independent runs and display sample-standard-
+        deviation error bars. The displayed generation and decode bars use the
+        declared seed-42 checkpoint at a 64-token prompt and batch size one, with
+        10 warm-ups and 30 measured repetitions; they quantify timing variation, not
+        checkpoint-seed variation. Sample coefficients of variation were roughly
+        1–5%, while the 4K prefill value is aggregated across all five final
+        checkpoints. These rankings are therefore precise for this narrow L4 workload,
+        not universal deployment rankings.
       </p>
     </figcaption>
   </figure>
@@ -206,7 +368,7 @@
         <th scope="col"><button data-sort="fixedDataLoss">Fixed-data loss ↓</button></th>
         <th scope="col"><button data-sort="activeParameters">Active params</button></th>
         <th scope="col"><button data-sort="totalParameters">Total params</button></th>
-        <th scope="col"><button data-sort="generationTokensPerSecond">Generation tok/s ↑</button></th>
+        <th scope="col"><button data-sort="cachedGenerationTokensPerSecond">Cached generation tok/s ↑</button></th>
         <th scope="col"><button data-sort="tailPerplexity4k">4K tail PPL ↓</button></th>
         <th scope="col"><button data-sort="prefillTokensPerSecond4k">4K prefill tok/s ↑</button></th>
         <th scope="col"><button data-sort="cacheStatus">KV cache</button></th>

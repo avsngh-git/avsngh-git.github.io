@@ -1,9 +1,10 @@
 <section class="tvc-section tvc-overview-intro">
   <dl class="tvc-metrics" aria-label="Experiment scale">
     <div><dt>10</dt><dd>model recipes</dd></div>
-    <div><dt>30</dt><dd>main training runs</dd></div>
-    <div><dt>983M</dt><dd>tokens per run</dd></div>
-    <div><dt>3</dt><dd>independent seeds</dd></div>
+    <div><dt>50</dt><dd>main training runs</dd></div>
+    <div><dt>500M</dt><dd>tokens per seed</dd></div>
+    <div><dt>5</dt><dd>independent seeds</dd></div>
+    <div><dt>25B</dt><dd>processed training tokens</dd></div>
     <div><dt>1K → 4K</dt><dd>context test</dd></div>
   </dl>
 
@@ -22,8 +23,8 @@
     <p>
       I built this project to make those distinctions measurable. Ten decoder-only
       recipes share the same GPT-2 tokenizer, FineWeb-Edu token stream, 1,024-token
-      training length, 983,040,000-token budget, optimizer schedule, validation
-      windows, and primary hardware. Each main recipe was trained from three random
+      training length, 499,974,144-token budget, optimizer schedule, validation
+      windows, and primary hardware. Each main recipe was trained from five random
       seeds. The evaluation then asks separate questions about quality at fixed data,
       progress at fixed wall-clock time, estimated compute, context extrapolation,
       prompt prefill, generation, representation geometry, and attention structure.
@@ -49,16 +50,19 @@
         <h3>MoE delivered the best fixed-data loss, but conditional capacity was not free</h3>
         <p>
           Full MoE replaced every dense SwiGLU block with eight experts and routed
-          each token to the top two. It reached <strong>3.4292 ± 0.0013</strong>
-          validation loss—the best result at the common token budget. Yet it stored
-          172.6M parameters, activated 68.8M per token, and generated at only
-          <strong>42.87 tokens/s</strong>, versus 454.55 for Vanilla.
+          each token to the top two. It reached <strong>3.6862</strong> validation
+          loss (95% CI 3.6753–3.6971), the best result at the common token budget.
+          The paired five-seed difference from Modern was −0.1236 loss
+          (95% CI −0.1381 to −0.1092). Active parameters were deliberately matched:
+          51.46M for MoE versus 51.43M for Modern. MoE still stored 103.37M
+          parameters and trained at 31.2K tokens/s, versus Modern's 69.7K.
         </p>
         <p class="tvc-interpretation">
           <strong>What that means:</strong> sparse activation expanded the conditional
-          function family enough to improve prediction, but expert dispatch and the
-          failed parameter-parity target made “more accurate” very different from
-          “lower latency” or “smaller.”
+          function family enough to improve prediction at nearly equal per-token
+          parameter activation. The extra inactive experts and dispatch path made
+          “more accurate” very different from “fewer stored parameters” or “faster
+          training.”
         </p>
       </div>
     </article>
@@ -69,10 +73,10 @@
         <h3>The positional rule dominated long-context behavior</h3>
         <p>
           ALiBI finished with a weaker 1K loss than Modern and every MoE recipe, but
-          produced the best 4K tail perplexity: <strong>58.74 ± 1.10</strong>. Modern
-          rose from 39.80 at 1K to 553.94 at 4K; the MoE family rose from roughly
-          32–34 to 489–527. Extra capacity did not repair a positional distribution
-          shift shared by the RoPE-based family.
+          produced the best 4K tail perplexity: <strong>74.35 ± 1.14</strong>. Modern
+          rose from 49.96 at 1K to 410.08 at 4K; the MoE family rose from 43.70–45.99
+          to 404.51–432.04. Extra conditional capacity did not repair a positional
+          distribution shift shared by the global RoPE-based family.
         </p>
         <p class="tvc-interpretation">
           <strong>What that means:</strong> the learned task at 1K and the rule used to
@@ -89,15 +93,18 @@
         <h3>Better asymptotic complexity did not guarantee better realized throughput</h3>
         <p>
           Causal linear attention avoids materializing the quadratic softmax matrix
-          by carrying prefix statistics. In this implementation, however, 4K prefill
-          reached only <strong>34.7K tokens/s</strong>, while SWA reached 253K and
-          ALiBI 243K. Its 4K tail perplexity also increased to 1,311.78.
+          by carrying prefix statistics. In this implementation, however, training
+          reached only <strong>53.4K tokens/s</strong> at 1K sequences, while SWA
+          reached 80.2K and GQA 80.2K. Its fixed-data loss was 4.0782—worse than
+          Modern's 3.8099 despite processing the same 499,974,144 tokens. At serving
+          time it reached 178.2 cached generation tokens/s versus Vanilla's 512.8,
+          and only 34.3K tokens/s for 4K prefill versus SWA's 204.9K.
         </p>
         <p class="tvc-interpretation">
           <strong>What that means:</strong> Big-O behavior describes growth in a limit;
           it does not include kernel fusion, serial recurrence, memory traffic, or
-          GPU occupancy at the sequence lengths tested here. The result evaluates
-          this ELU+1 implementation—not all linear-attention research.
+          GPU occupancy at the sequence lengths and hardware tested here. The result
+          evaluates this causal ELU+1 recurrence—not all linear-attention research.
         </p>
       </div>
     </article>

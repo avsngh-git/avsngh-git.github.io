@@ -18,6 +18,83 @@
   </p>
 </section>
 
+<section class="tvc-section" id="moe-routing">
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Sparse expert behavior</p>
+    <h2>Did the active-parameter-matched router use its stored capacity?</h2>
+    <p>
+      A top-two MoE can store many experts and still collapse onto a small subset.
+      The utilization view measures each expert's share of selected routes by layer
+      across five seeds. Router entropy supplies a second balance check. The stability
+      view then asks whether independently trained seeds learn comparable routing
+      decisions after expert labels are aligned on one half of the validation tokens
+      and scored on the held-out half.
+    </p>
+  </div>
+  <div class="tvc-interactive-prompt">
+    <span class="tvc-prompt-icon" aria-hidden="true">✦</span>
+    <div><strong>Interactive routing probe</strong><p>Select an MoE placement and layer. Bars show mean expert use with seed-level variation.</p></div>
+  </div>
+  <div class="tvc-control-panel tvc-attention-controls">
+    <label>Choose MoE recipe <select id="routing-variant"></select></label>
+    <label>Choose expert layer <select id="routing-layer"></select></label>
+  </div>
+  <figure class="tvc-figure tvc-wide-figure" id="routing-utilization-figure">
+    <div id="routing-status" class="tvc-status" role="status"></div>
+    <div
+      id="routing-utilization-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive expert utilization for the selected MoE recipe and layer"
+    ><p class="tvc-loading">Loading expert utilization…</p></div>
+    <figcaption class="figure-interpretation">
+      <h3>How to interpret balanced expert use</h3>
+      <p>
+        Uniform selection would assign each of eight experts roughly one eighth of
+        top-k routes. Systematic deviations show specialization or imbalance; seed
+        error bars show whether that pattern repeats. This implementation has no
+        expert-capacity cutoff, so selected routes are never dropped and utilization
+        is not distorted by overflow.
+      </p>
+      <p>
+        The observed normalized router entropy is 0.9986 for full MoE, 0.9984 for
+        interleaved MoE, and 0.9979 for deep MoE, where 1.0 is the maximum possible
+        entropy for eight experts. The routers therefore used their expert pools
+        broadly; the quality gain is not explained by a trivial collapse onto one or
+        two experts. Balanced routing is still a health signal, not a causal
+        explanation for validation loss. The quality chart establishes the
+        recipe-level effect; utilization shows how the conditional path was exercised.
+      </p>
+    </figcaption>
+  </figure>
+  <figure class="tvc-figure tvc-wide-figure" id="routing-stability-figure">
+    <div
+      id="routing-stability-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive cross-seed expert-routing agreement by MoE layer"
+    ><p class="tvc-loading">Loading aligned cross-seed routing stability…</p></div>
+    <figcaption class="figure-interpretation">
+      <h3>Why expert labels must be aligned before seeds are compared</h3>
+      <p>
+        Expert 0 in one seed has no inherent correspondence to expert 0 in another.
+        A one-to-one alignment is learned on half of matched validation tokens and
+        agreement is reported only on the held-out half. The curve therefore measures
+        repeatable routing structure without pretending raw expert IDs are semantic
+        labels.
+      </p>
+      <p>
+        Mean held-out agreement is 0.431 for deep MoE, 0.366 for interleaved MoE,
+        and 0.363 for full MoE. Chance after balancing eight labels would be near
+        0.125, so the routers learn some repeatable token partitioning; they are far
+        from converging on one seed-invariant taxonomy. Deep-only expert placement is
+        the most stable of the three, consistent with later layers receiving more
+        transformed and potentially more separable representations.
+      </p>
+    </figcaption>
+  </figure>
+</section>
+
 <section class="tvc-section">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Representation dimensionality</p>
@@ -30,29 +107,33 @@
     </p>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="stable-rank-figure">
-    <a href="{{ '/assets/transformer-variants/plots/stable_rank.png' | relative_url }}" target="_blank" rel="noopener noreferrer">
-      <img data-case-asset src="{{ '/assets/transformer-variants/plots/stable_rank.png' | relative_url }}" alt="Stable rank by Transformer layer for all recipes">
-    </a>
-    <a class="tvc-figure-zoom" href="{{ '/assets/transformer-variants/plots/stable_rank.png' | relative_url }}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> Open plot at full resolution</a>
+    <div
+      id="stable-rank-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive stable-rank profiles by Transformer layer"
+    ><p class="tvc-loading">Loading five-seed stable-rank profiles…</p></div>
     <figcaption class="figure-interpretation">
       <h3>What the depth profiles show</h3>
       <p>
-        ALiBI has the highest mean stable rank (15.2) and expands sharply in the middle
-        and later blocks, reaching roughly 20 around layers four and five. Pure SWA and
-        interleaved SWA form the next high-rank group. Linear attention has the lowest
-        mean (4.4), with compressed early and middle representations before a partial
-        late expansion. The dense Modern and MoE families occupy the middle-to-lower
-        range despite their stronger next-token losses.
+        Across five seeds, ALiBI has the highest mean stable rank (15.25). Modern
+        (12.18), pure SWA (11.62), SWA interleaved (11.29), and MoE deep (11.28)
+        form the next group, while causal linear attention has the lowest mean
+        (4.74). The ranking is not a disguised quality ranking: full MoE reaches
+        the best held-out loss even though its mean stable rank is only 9.48,
+        whereas ALiBI spreads activation energy across more directions but predicts
+        held-out tokens less accurately.
       </p>
       <h3>Why that pattern matters—and what it does not prove</h3>
       <p>
         Architectural constraints change how the residual stream uses dimensions.
-        ALiBI's head-specific distance slopes and SWA's locality are associated with
-        broader activation spectra here, while the fixed-state linear operator is
-        associated with a narrower spectrum. Yet full MoE achieves the best loss with
-        a mean rank of only 7.0. Conditional expert capacity can improve prediction
-        without maximizing residual-stream dimensionality. Stable rank therefore helps
-        distinguish representational regimes; it is not a quality objective.
+        ALiBI's head-specific distance slopes are associated here with a broader
+        activation spectrum, while the fixed-state linear recurrence is associated
+        with a much narrower one. That association is descriptive, because each
+        recipe changes several coupled operations and stable rank is measured after
+        training rather than manipulated directly. Its useful role is to separate
+        representational regimes and generate hypotheses—not to act as a proxy
+        objective for language-model quality.
       </p>
     </figcaption>
   </figure>
@@ -71,26 +152,32 @@
     </p>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="cka-figure">
-    <a href="{{ '/assets/transformer-variants/plots/cka_adjacent.png' | relative_url }}" target="_blank" rel="noopener noreferrer">
-      <img data-case-asset src="{{ '/assets/transformer-variants/plots/cka_adjacent.png' | relative_url }}" alt="Adjacent-layer linear CKA for all Transformer recipes">
-    </a>
-    <a class="tvc-figure-zoom" href="{{ '/assets/transformer-variants/plots/cka_adjacent.png' | relative_url }}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> Open plot at full resolution</a>
+    <div
+      id="cka-chart"
+      class="tvc-plotly-chart"
+      role="img"
+      aria-label="Interactive adjacent-layer CKA profiles for all Transformer recipes"
+    ><p class="tvc-loading">Loading five-seed CKA profiles…</p></div>
     <figcaption class="figure-interpretation">
       <h3>The important signal is the location of a drop, not a universal target value</h3>
       <p>
-        Most adjacent pairs remain between roughly 0.7 and 0.95, so the residual stream
-        is generally transformed incrementally. The most architecture-aligned event is
-        MoE deep's drop to about 0.36 at pair three. That pair crosses from the dense
-        first half into the expert-equipped second half, so a large geometric change at
-        the placement boundary is consistent with the intended late specialization.
+        Most five-seed mean adjacent-layer values lie between roughly 0.70 and 0.95,
+        so the residual stream is generally transformed incrementally. MoE deep's
+        largest transition is 0.697 at pair three—the boundary between its dense
+        first half and expert-equipped second half. The location agrees with the
+        intended placement mechanism, but the new five-seed estimate is materially
+        less dramatic than the earlier three-seed snapshot; the page therefore treats
+        it as a reproducible boundary effect, not a discontinuity.
       </p>
       <p>
-        Linear attention also shows unusually low similarity at the first pair and near
-        pair five, suggesting its compressed prefix operator reorganizes representations
-        differently across depth. Modern has a visible middle-layer drop, while ALiBI
-        remains comparatively consistent. None of these observations establishes that
-        “lower CKA is better.” They identify where to investigate mechanism-specific
-        transformations and connect especially well to deliberate layer transitions.
+        Causal linear attention supplies the clearest contrast: its first adjacent
+        pair falls to 0.409, then the next two pairs exceed 0.98. Its recurrent prefix
+        state appears to reorganize the input strongly and then preserve a much more
+        similar geometry through the early-middle blocks. Modern declines gradually
+        to 0.706 at the final pair, while ALiBI stays between 0.832 and 0.900 throughout.
+        None of these observations establishes that “lower CKA is better.” They locate
+        architecture-aligned transformations that can be tested by a future surgical
+        ablation.
       </p>
     </figcaption>
   </figure>
@@ -127,8 +214,13 @@
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="attention-figure">
     <div id="attention-status" class="tvc-status" role="status"></div>
-    <canvas id="attention-canvas" width="720" height="620" aria-label="Selected causal attention heatmap"></canvas>
-    <noscript><img data-case-asset src="{{ '/assets/transformer-variants/plots/attention_modern_layer_04.png' | relative_url }}" alt="Modern Transformer mean attention probabilities at layer four"></noscript>
+    <div
+      id="attention-chart"
+      class="tvc-plotly-chart tvc-attention-plot"
+      role="img"
+      aria-label="Interactive selected causal attention heatmap"
+    ></div>
+    <noscript><p>The layer/head attention explorer requires JavaScript; the frozen attention tensors remain available in the linked project repository.</p></noscript>
     <figcaption class="figure-interpretation">
       <h3>What to compare across attention families</h3>
       <p>
@@ -167,7 +259,7 @@
     <article><span>01</span><div><h3>Registry-driven construction</h3><p><strong>Problem.</strong> Scattered variant conditionals make it difficult to tell which components changed.</p><p><strong>Choice.</strong> Each registered recipe declares its model class, position method, attention class, normalization, FFN, overrides, and optional per-layer pattern behind one build interface.</p><p><strong>Consequence.</strong> The complete architecture matrix can be generated from explicit construction knowledge; a new recipe must declare its deviations instead of inheriting hidden trainer branches.</p></div></article>
     <article><span>02</span><div><h3>Protocol-level attention interface</h3><p><strong>Problem.</strong> Full attention, GQA, SWA, ALiBI, and linear recurrence expose different cache and visualization semantics.</p><p><strong>Choice.</strong> Callers pass cache state opaquely and evaluators ask capabilities rather than assuming every operator materializes the same tensors.</p><p><strong>Consequence.</strong> Unsupported cache and attention-map states remain visible, preventing a convenient but scientifically false common denominator.</p></div></article>
     <article><span>03</span><div><h3>Verified asynchronous checkpoints</h3><p><strong>Problem.</strong> GPU failures and partial writes can destroy progress or silently alter the run after recovery.</p><p><strong>Choice.</strong> CPU snapshots, atomic replacement, SHA-256 verification, ring rotation, health monitoring, and restoration of model, optimizer, RNG, scheduler, and loader cursor.</p><p><strong>Consequence.</strong> Recovery preserves the identity of a seed and its exact consumed-token trajectory, not only a set of model weights.</p></div></article>
-    <article><span>04</span><div><h3>Frontend-agnostic evidence</h3><p><strong>Problem.</strong> A server-bound dashboard is fragile and difficult to preserve as a portfolio artifact.</p><p><strong>Choice.</strong> Evaluators emit strict JSON and publication-ready plots; this Jekyll site freezes a versioned snapshot and adds small local interactions.</p><p><strong>Consequence.</strong> The page can be rebuilt without a Python server, while every displayed number remains traceable to the experiment commit.</p></div></article>
+    <article><span>04</span><div><h3>Frontend-agnostic evidence</h3><p><strong>Problem.</strong> A server-bound dashboard is fragile and difficult to preserve as a portfolio artifact.</p><p><strong>Choice.</strong> Evaluators emit strict JSON and standalone interactive Plotly assets; this Jekyll site freezes a versioned snapshot and renders the same evidence with local, responsive controls.</p><p><strong>Consequence.</strong> The page can be rebuilt without a Python server or chart CDN, while every displayed number remains traceable to the experiment commit.</p></div></article>
   </div>
 </section>
 
@@ -177,8 +269,8 @@
     <h2>What this evidence does not establish</h2>
   </div>
   <div class="tvc-limit-list">
-    <article><h3>MoE is not parameter-matched</h3><p>Full MoE activates 68.8M and stores 172.6M parameters versus 51.4M for the dense baseline. Its quality advantage cannot be attributed to routing independently of increased capacity.</p></article>
-    <article><h3>Three seeds provide limited uncertainty</h3><p>Checkpoint seeds are the correct replication unit, but three observations still produce broad uncertainty about how rankings would behave under new initializations, corpora, or scales.</p></article>
+    <article><h3>Active parity is not stored-parameter parity</h3><p>Full MoE activates 51.46M parameters per token versus Modern's 51.43M, but stores 103.37M because six experts are inactive for each token. The study fairly compares active computation while reporting the extra checkpoint and memory capacity explicitly.</p></article>
+    <article><h3>Five seeds improve—not eliminate—uncertainty</h3><p>Checkpoint seeds are the correct replication unit and five observations reduce standard error relative to the historical three-seed study. They still do not establish how rankings transfer to new corpora, parameter scales, or hardware.</p></article>
     <article><h3>Long context is extrapolation, not long-context training</h3><p>Every recipe trains at 1,024 tokens and is tested up to 4,096. The result measures behavior outside the training range and should not be generalized to models trained natively at 4K.</p></article>
     <article><h3>SWA's stability is local</h3><p>A 4K container does not imply a 4K receptive field. Each SWA query sees at most 256 tokens per layer, so flat perplexity cannot demonstrate retrieval from the distant prefix.</p></article>
     <article><h3>Throughput is hardware- and implementation-specific</h3><p>Measurements come from an NVIDIA L4-24Q and these kernels, tensor shapes, cache paths, and batch sizes. The relative order can change with fused kernels or different accelerators.</p></article>

@@ -4,7 +4,7 @@
     {
       "variant": "alibi",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/alibi_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/alibi_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -156,7 +156,7 @@
     {
       "variant": "gqa",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/gqa_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/gqa_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -306,9 +306,23 @@
       "head_count": 8
     },
     {
+      "variant": "linear",
+      "status": "unsupported",
+      "checkpoint_dir": "runs/main_500m_5seed/linear_s42",
+      "context": {
+        "data_dir": "data/processed/fineweb-1B",
+        "data_split": "val",
+        "batch_index": 0,
+        "sequence_index": 0,
+        "length": 64,
+        "tokenizer": "gpt2"
+      },
+      "reason": "Causal linear attention uses recurrent feature-map statistics and does not define a conventional pairwise softmax attention matrix."
+    },
+    {
       "variant": "modern",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/modern_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/modern_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -460,7 +474,7 @@
     {
       "variant": "moe_deep",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/moe_deep_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/moe_deep_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -612,7 +626,7 @@
     {
       "variant": "moe_interleaved",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/moe_interleaved_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/moe_interleaved_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -764,7 +778,7 @@
     {
       "variant": "moe",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/moe_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/moe_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -916,7 +930,7 @@
     {
       "variant": "swa_interleaved",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/swa_interleaved_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/swa_interleaved_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -1068,7 +1082,7 @@
     {
       "variant": "swa",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/swa_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/swa_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -1220,7 +1234,7 @@
     {
       "variant": "vanilla",
       "status": "supported",
-      "checkpoint_dir": "checkpoints/vanilla_main_1B_s42",
+      "checkpoint_dir": "runs/main_500m_5seed/vanilla_s42",
       "context": {
         "data_dir": "data/processed/fineweb-1B",
         "data_split": "val",
@@ -1368,20 +1382,6 @@
         7
       ],
       "head_count": 8
-    },
-    {
-      "variant": "linear",
-      "status": "unsupported",
-      "checkpoint_dir": "checkpoints/linear_main_1B_fixed_s42",
-      "context": {
-        "data_dir": "data/processed/fineweb-1B",
-        "data_split": "val",
-        "batch_index": 0,
-        "sequence_index": 0,
-        "length": 64,
-        "tokenizer": "gpt2"
-      },
-      "reason": "Causal linear attention uses recurrent feature-map statistics and does not define a conventional pairwise softmax attention matrix."
     }
   ]
 }

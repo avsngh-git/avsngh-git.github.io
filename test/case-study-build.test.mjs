@@ -8,7 +8,6 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const siteRoot = process.env.JEKYLL_DESTINATION
   ? path.resolve(process.env.JEKYLL_DESTINATION)
   : path.join(root, "_site");
-
 const chapters = [
   ["overview", "projects/transformer-variants.html"],
   ["architecture", "projects/transformer-variants/architecture/index.html"],
@@ -37,7 +36,8 @@ test("case study renders as a five-chapter series with persistent navigation", a
     assert.equal((html.match(/class="tvc-chapter-link/g) ?? []).length, 5);
     assert.match(html, new RegExp(`data-chapter="${chapter}"[^>]*aria-current="page"`));
     assert.match(html, /aria-label="Transformer Variants case-study chapters"/);
-    assert.match(html, /21e3cf2/);
+    assert.match(html, /source commit recorded in the interactive data bundle/);
+    assert.match(html, /https:\/\/github\.com\/avsngh-git\/TransformerVariants/);
   }
 });
 
@@ -62,17 +62,64 @@ test("architecture chapter contrasts mechanisms, expectations, and observed effe
   assert.match(html, /id="ffn-comparison"/);
 });
 
-test("results and internals use full-width figures and prominent interactive prompts", async () => {
+test("results and internals use Plotly figures and prominent interactive prompts", async () => {
   const results = await chapterHtml("results");
   const internals = await chapterHtml("internals");
 
   assert.doesNotMatch(results + internals, /tvc-paired-figure/);
+  assert.match(results, /id="fixed-data-chart"/);
+  assert.match(results, /id="learning-curves-chart"/);
+  assert.match(results, /id="pareto-chart"/);
+  assert.match(results, /id="retrieval-chart"/);
+  assert.match(results, /id="retrieval-configuration"/);
+  assert.match(results, /id="retrieval-distance"/);
+  assert.match(results, /RoPE base 100,000/);
+  assert.doesNotMatch(results, /learning_curves_.*\.png|pareto_.*\.png/);
   assert.match(internals, /id="stable-rank-figure"/);
   assert.match(internals, /id="cka-figure"/);
+  assert.match(internals, /id="stable-rank-chart"/);
+  assert.match(internals, /id="cka-chart"/);
+  assert.match(internals, /id="attention-chart"/);
+  assert.match(internals, /id="routing-utilization-chart"/);
+  assert.match(internals, /id="routing-stability-chart"/);
+  assert.doesNotMatch(internals, /<canvas|stable_rank\.png|cka_adjacent\.png/);
   assert.equal((results.match(/class="tvc-interactive-prompt/g) ?? []).length >= 3, true);
   assert.equal((results.match(/class="figure-interpretation/g) ?? []).length >= 4, true);
+  assert.equal(
+    (results.match(/<figure\b/g) ?? []).length,
+    (results.match(/class="figure-interpretation/g) ?? []).length,
+    "every Results figure should have an explanatory caption",
+  );
+  assert.equal(
+    (internals.match(/<figure\b/g) ?? []).length,
+    (internals.match(/class="figure-interpretation/g) ?? []).length,
+    "every Internals figure should have an explanatory caption",
+  );
   assert.match(results, /id="variant-comparison"/);
-  assert.match(internals, /id="attention-canvas"/);
+});
+
+test("case study loads a local Plotly runtime before its chart module", async () => {
+  const html = await chapterHtml("results");
+  const runtime = html.indexOf("/assets/js/plotly.min.js");
+  const module = html.indexOf("/assets/js/transformer-case-study.mjs");
+
+  assert.equal(runtime >= 0, true);
+  assert.equal(module > runtime, true);
+  await access(path.join(siteRoot, "assets/js/plotly.min.js"));
+  const source = await readFile(
+    path.join(root, "assets/js/transformer-case-study.mjs"),
+    "utf8",
+  );
+  assert.match(source, /Plotly\.(?:newPlot|react)/);
+  assert.match(source, /container\.replaceChildren\(\)/);
+  assert.match(source, /MutationObserver/);
+  assert.match(source, /attributeFilter: \["data-theme"\]/);
+  assert.match(source, /aria-live/);
+  assert.match(source, /Accessible chart data/);
+  assert.match(source, /variantPayload\?\.\[configuration\] \|\| null/);
+  assert.doesNotMatch(source, /Object\.values\(variantPayload/);
+  await access(path.join(siteRoot, "assets/data/transformer-variants/retrieval.json"));
+  await access(path.join(siteRoot, "assets/data/transformer-variants/moe_routing.json"));
 });
 
 test("every case-study chapter references only resolvable local case assets", async () => {
@@ -82,7 +129,7 @@ test("every case-study chapter references only resolvable local case assets", as
       (match) => match[1],
     );
 
-    assert.equal(references.length >= 2, true, `${chapter} should load shared local assets`);
+    assert.equal(references.length >= 1, true, `${chapter} should load shared local assets`);
     for (const reference of references) {
       assert.match(reference, /^\/assets\//);
       const sitePath = reference.slice(1);
