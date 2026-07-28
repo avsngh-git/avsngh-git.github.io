@@ -778,7 +778,7 @@
 }
 
 .tvc-throughput-explanation,
-.tvc-dynamic-story {
+.tvc-option-story {
   padding: clamp(1.05rem, 2vw, 1.4rem);
   border: 1px solid var(--tvc-border);
   border-top: 4px solid var(--tvc-primary);
@@ -788,7 +788,8 @@
   font-size: 0.98rem;
 }
 
-.tvc-throughput-eyebrow {
+.tvc-throughput-eyebrow,
+.tvc-option-story-eyebrow {
   margin: 0 0 0.35rem;
   color: var(--tvc-primary);
   font-size: 0.76rem;
@@ -798,26 +799,29 @@
 }
 
 .tvc-throughput-explanation h3,
-.tvc-dynamic-story h3 {
+.tvc-option-story h3 {
   margin: 0 0 0.7rem;
   font-size: clamp(1.15rem, 2vw, 1.45rem);
 }
 
-.tvc-throughput-explanation-grid {
+.tvc-throughput-explanation-grid,
+.tvc-option-story-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
   margin-top: 1rem;
 }
 
-.tvc-throughput-explanation-grid article {
+.tvc-throughput-explanation-grid article,
+.tvc-option-story-grid article {
   padding: 1rem;
   border: 1px solid var(--tvc-border);
   border-radius: calc(var(--tvc-radius) * 0.8);
   background: var(--tvc-surface);
 }
 
-.tvc-throughput-explanation-grid h4 {
+.tvc-throughput-explanation-grid h4,
+.tvc-option-story-grid h4 {
   margin: 0 0 0.45rem;
   color: var(--tvc-primary);
   font-size: 0.84rem;
@@ -825,18 +829,25 @@
   text-transform: uppercase;
 }
 
-.tvc-throughput-explanation-grid p {
+.tvc-throughput-explanation-grid p,
+.tvc-option-story-grid p {
   margin: 0;
 }
 
-.tvc-throughput-compromise {
+.tvc-throughput-compromise,
+.tvc-option-story-conclusion {
   margin: 1rem 0 0;
   padding-left: 0.9rem;
   border-left: 3px solid var(--tvc-primary);
 }
 
-.tvc-throughput-method,
-.tvc-dynamic-story-method {
+.tvc-option-story-note {
+  margin: 0.8rem 0 0;
+  color: var(--tvc-muted);
+  font-size: 0.84rem;
+}
+
+.tvc-throughput-method {
   margin-top: 0.85rem;
 }
 
@@ -1727,6 +1738,7 @@
   .tvc-attention-controls,
   .tvc-retrieval-outcome,
   .tvc-throughput-explanation-grid,
+  .tvc-option-story-grid,
   .tvc-chapter-pager,
   .tvc-pager {
     grid-template-columns: 1fr;

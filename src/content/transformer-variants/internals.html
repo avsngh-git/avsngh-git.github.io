@@ -39,6 +39,29 @@
     <label>Choose Mixture of Experts recipe <select id="routing-variant"></select></label>
     <label>Choose expert layer <select id="routing-layer"></select></label>
   </div>
+  <script type="application/json" id="routing-story-content">
+    {
+      "graph": "The bars show each expert’s share of top-two selections for [[variant]] at layer [[layer]], averaged across [[seedCount]] seeds. Perfectly equal use would give each expert 12.5%.",
+      "driverHeading": "What this layer shows",
+      "driver": "Expert [[mostExpert]] is selected most at [[mostShare]], while Expert [[leastExpert]] is selected least at [[leastShare]]. The spread is [[spread]] percentage points and normalized entropy is [[entropy]].",
+      "tradeoffHeading": "What this placement gains and costs",
+      "conclusion": "Broad use means the router did not collapse onto one or two experts. It is a health check, not proof that routing caused the quality result.",
+      "variants": {
+        "moe": {
+          "title": "Full Mixture of Experts uses its pool at layer [[layer]]",
+          "tradeoff": "Experts replace every feed-forward block. This reaches the best loss, 3.6862, but stores 103.37M parameters and has the slowest training rate, 31.2K tokens/s."
+        },
+        "moe_interleaved": {
+          "title": "Interleaved Mixture of Experts uses its pool at layer [[layer]]",
+          "tradeoff": "Experts appear in alternating layers. It preserves most of the quality gain at 3.7252 loss and improves training to 36.7K tokens/s, but remains much slower than dense recipes."
+        },
+        "moe_deep": {
+          "title": "Deep Mixture of Experts uses its pool at layer [[layer]]",
+          "tradeoff": "Experts appear only in the deeper half. It reaches 3.7311 loss and 36.5K tokens/s, while producing the most repeatable aligned routing across seeds."
+        }
+      }
+    }
+  </script>
   <figure class="tvc-figure tvc-wide-figure" id="routing-utilization-figure">
     <div id="routing-status" class="tvc-status" role="status"></div>
     <div
@@ -47,23 +70,20 @@
       role="img"
       aria-label="Interactive expert utilization for the selected Mixture of Experts recipe and layer"
     ><p class="tvc-loading">Loading expert utilization…</p></div>
-    <figcaption class="figure-interpretation">
-      <h3>How to interpret balanced expert use</h3>
-      <p>
-        Uniform selection would assign each of eight experts roughly one eighth of
-        top-k routes. Systematic deviations show specialization or imbalance; seed
-        error bars show whether that pattern repeats. This implementation has no
-        expert-capacity cutoff, so selected routes are never dropped and utilization
-        is not distorted by overflow.
-      </p>
-      <p>
-        The observed normalized router entropy is 0.9986 for the full Mixture of Experts recipe, 0.9984 for
-        the interleaved recipe, and 0.9979 for the deep recipe, where 1.0 is the maximum possible
-        entropy for eight experts. The routers therefore used their expert pools
-        broadly; the quality gain is not explained by a trivial collapse onto one or
-        two experts. Balanced routing is still a health signal, not a causal
-        explanation for validation loss. The quality chart establishes the
-        recipe-level effect; utilization shows how the conditional path was exercised.
+    <figcaption>
+      <div class="tvc-option-story" id="routing-story" aria-live="polite" aria-atomic="true">
+        <p class="tvc-option-story-eyebrow" data-story="eyebrow">Selected router layer</p>
+        <h3 data-story="title">Loading selected routing evidence…</h3>
+        <p data-story="graph"></p>
+        <div class="tvc-option-story-grid">
+          <article><h4 data-story="driver-heading"></h4><p data-story="driver"></p></article>
+          <article><h4 data-story="tradeoff-heading"></h4><p data-story="tradeoff"></p></article>
+        </div>
+        <p class="tvc-option-story-conclusion" data-story="conclusion"></p>
+      </div>
+      <p class="tvc-option-story-note">
+        This implementation has no expert-capacity cutoff, so selected routes are not
+        dropped through overflow.
       </p>
     </figcaption>
   </figure>
@@ -213,6 +233,32 @@
     <label>Choose layer <select id="attention-layer"></select></label>
     <label>Choose head <select id="attention-head"></select></label>
   </div>
+  <script type="application/json" id="attention-story-content">
+    {
+      "title": "[[variant]] · layer [[layer]] · [[headLabel]]",
+      "graph": "Rows are query tokens and columns are earlier key tokens. For this selection, [[selfMass]] of probability stays on the current token and [[recentMass]] stays within the current or previous four positions.",
+      "driverHeading": "What the selected pattern shows",
+      "driver": "The probability-weighted key lies [[meanDistance]] tokens behind its query on average. Changing the layer or head reveals whether that concentration is shared or specialized.",
+      "tradeoffHeading": "How the architecture shapes it",
+      "conclusion": "[[selectionMeaning]] The map describes one frozen 64-token sample; it does not prove that the model retrieves facts or reasons correctly.",
+      "unsupportedTitle": "[[variant]] has no conventional pairwise attention map",
+      "unsupportedGraph": "[[reason]] The interface reports this as unsupported instead of manufacturing a misleading heatmap.",
+      "unsupportedDriver": "Causal linear attention summarizes the prefix in running statistics. Its state can be inspected, but it is not a matrix of query-to-key softmax probabilities.",
+      "unsupportedTradeoff": "The fixed-size state offers bounded memory, yet this implementation has slow serial prefix updates and the weakest supported 4K prefill rate.",
+      "unsupportedConclusion": "Unsupported is an architectural distinction, not missing experimental data.",
+      "variants": {
+        "modern": "Modern uses full attention with rotary position embeddings. Its map can place probability anywhere in the visible causal prefix.",
+        "vanilla": "Vanilla uses full attention with learned position vectors. Its map is unrestricted inside the trained 1K position range.",
+        "alibi": "ALiBI subtracts a head-specific distance penalty, so steeper heads are expected to concentrate more strongly near the diagonal.",
+        "gqa": "Grouped-Query Attention keeps distinct query heads while groups share key/value heads. The heatmap shows query specialization, not the cache-memory saving.",
+        "swa": "Sliding-Window Attention limits each query to 256 tokens. This sample is only 64 tokens, so it cannot display the window boundary.",
+        "swa_interleaved": "This recipe alternates full and 256-token local layers. The selected layer’s measured concentration must be read together with that changing topology.",
+        "moe": "Mixture of Experts uses the same full-attention operator as Modern. Map differences reflect learned representations, not expert routing inside attention.",
+        "moe_interleaved": "Interleaved Mixture of Experts keeps Modern full attention. Experts change feed-forward layers, so this map does not display routing decisions.",
+        "moe_deep": "Deep Mixture of Experts keeps Modern full attention. Its experts begin later in depth, but the attention topology itself remains unchanged."
+      }
+    }
+  </script>
   <figure class="tvc-figure tvc-wide-figure" id="attention-figure">
     <div id="attention-status" class="tvc-status" role="status"></div>
     <div
@@ -222,26 +268,20 @@
       aria-label="Interactive selected causal attention heatmap"
     ></div>
     <noscript><p>The layer/head attention explorer requires JavaScript; the frozen attention tensors remain available in the linked project repository.</p></noscript>
-    <figcaption class="figure-interpretation">
-      <h3>What to compare across attention families</h3>
-      <p>
-        Every softmax map must have an empty upper triangle: non-zero probability above
-        that boundary would reveal future-token leakage. ALiBI is expected to place
-        stronger probability near the diagonal, especially in steep-slope heads,
-        because distance is subtracted directly from logits. Grouped-Query Attention can still show
-        head-specific patterns because query heads differ, even though groups share
-        keys and values; the heatmap alone cannot display the memory saving.
-      </p>
-      <p>
-        Modern and the three Mixture of Experts recipes use the same attention operator. Differences
-        among their maps reflect different learned representations, not a different
-        attention topology. The exported sample is 64 tokens—shorter than the
-        Sliding-Window Attention model's
-        256-token window—so it cannot visibly demonstrate the window boundary; the
-        architecture configuration and 4K throughput measurement provide that evidence.
-        Causal linear attention is explicitly unsupported because prefix statistics do
-        not define one conventional pairwise softmax matrix. Refusing to manufacture a
-        heatmap is part of faithful interpretation.
+    <figcaption>
+      <div class="tvc-option-story" id="attention-story" aria-live="polite" aria-atomic="true">
+        <p class="tvc-option-story-eyebrow" data-story="eyebrow">Selected attention map</p>
+        <h3 data-story="title">Loading selected attention evidence…</h3>
+        <p data-story="graph"></p>
+        <div class="tvc-option-story-grid">
+          <article><h4 data-story="driver-heading"></h4><p data-story="driver"></p></article>
+          <article><h4 data-story="tradeoff-heading"></h4><p data-story="tradeoff"></p></article>
+        </div>
+        <p class="tvc-option-story-conclusion" data-story="conclusion"></p>
+      </div>
+      <p class="tvc-option-story-note">
+        Every valid causal softmax map must keep the upper triangle empty. Non-zero
+        probability there would indicate future-token leakage.
       </p>
     </figcaption>
   </figure>
