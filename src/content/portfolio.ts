@@ -162,9 +162,9 @@ export const portfolio = {
       title: "Transformer Variants: A Controlled 50-Run Study",
       description:
         "Ten Transformer recipes, fifty controlled runs, five seeds, and 25B processed training tokens—measuring quality, long-context behavior, throughput, model internals, and exact fault recovery.",
-      image: "/assets/transformer-variants/thumbnail.svg",
+      image: "/assets/transformer-variants/transformer-variants-card.webp",
       imageAlt:
-        "Abstract comparison of dense, local, and mixture-of-experts Transformer paths",
+        "Dark research dashboard comparing ten Transformer recipes with learning curves and a quality-versus-compute scatter plot",
       href: "/projects/transformer-variants/",
       sourceUrl: "https://github.com/avsngh-git/TransformerVariants",
       kind: "internal",
@@ -181,8 +181,9 @@ export const portfolio = {
       title: "Portfolio Website",
       description:
         "The source for this personal portfolio, migrated to a React and TypeScript application and published on GitHub Pages.",
-      image: "https://github.com/avsngh-git.png",
-      imageAlt: "Avinash Singh’s GitHub profile avatar",
+      image: "/assets/portfolio/portfolio-site-card.webp",
+      imageAlt:
+        "Split view of the portfolio’s React source code and the rendered dark-themed website",
       href: "https://github.com/avsngh-git/avsngh-git.github.io",
       sourceUrl: "https://github.com/avsngh-git/avsngh-git.github.io",
       kind: "external",
