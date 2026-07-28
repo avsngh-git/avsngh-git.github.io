@@ -74,6 +74,18 @@ function storyKey(value) {
   return value.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+const storyFields = [
+  "eyebrow", "title", "graph", "taskHeading", "task", "driverHeading", "driver",
+  "tradeoffHeading", "tradeoff", "groupsHeading", "groups", "conclusion",
+];
+
+function storyView(content, overrides = {}) {
+  return Object.fromEntries(storyFields.map((field) => [
+    field,
+    overrides[field] ?? content?.[field] ?? "",
+  ]));
+}
+
 function updateOptionStory(panelId, story, values = {}) {
   const panel = root.querySelector(`#${panelId}`);
   if (!panel || !story) return;
@@ -83,6 +95,15 @@ function updateOptionStory(panelId, story, values = {}) {
       ? fillTemplate(text, values)
       : "";
   }
+}
+
+function showStoryFailure(panelId, message) {
+  updateOptionStory(panelId, storyView({}, {
+    eyebrow: "Interactive view unavailable",
+    title: "The explanation could not be updated",
+    graph: message,
+    conclusion: "Reload the page to try again. The surrounding static findings remain available.",
+  }));
 }
 
 function chartTheme(extra = {}) {
@@ -348,9 +369,28 @@ function renderFixedData(summary) {
   });
 }
 
+const learningAxes = {
+  tokens: {
+    label: "Training tokens",
+    scale: "log",
+    formatBudget: (value) => compact.format(value),
+  },
+  wallclock: {
+    label: "Elapsed training seconds",
+    scale: "linear",
+    formatBudget: (value) => `${(value / 3600).toFixed(2)} hours`,
+  },
+  flops: {
+    label: "Estimated cumulative FLOPs",
+    scale: "log",
+    formatBudget: (value) => `${(value / 1e15).toFixed(2)} × 10^15 FLOPs`,
+  },
+};
+
 function renderLearningCurves(summary, axis) {
   const container = root.querySelector("#learning-curves-chart");
   if (!container) return;
+  const axisContent = learningAxes[axis] || learningAxes.tokens;
   const curves = summary.trainingCurves?.[axis] || {};
   const seedTraces = Object.entries(curves).flatMap(([variant, curve]) =>
     (curve.seeds || []).map((seed) => ({
@@ -388,15 +428,10 @@ function renderLearningCurves(summary, axis) {
       "<br>n=%{customdata}<extra></extra>",
   }));
   const traces = [...seedTraces, ...aggregateTraces];
-  const labels = {
-    tokens: "Training tokens",
-    wallclock: "Elapsed training seconds",
-    flops: "Estimated cumulative FLOPs",
-  };
   renderPlot(container, traces, {
     xaxis: {
-      title: labels[axis],
-      type: axis === "wallclock" ? "linear" : "log",
+      title: axisContent.label,
+      type: axisContent.scale,
       automargin: true,
     },
     yaxis: { title: "Validation cross-entropy (lower is better)", automargin: true },
@@ -405,9 +440,7 @@ function renderLearningCurves(summary, axis) {
 }
 
 function formatLearningBudget(axis, value) {
-  if (axis === "wallclock") return `${(value / 3600).toFixed(2)} hours`;
-  if (axis === "flops") return `${(value / 1e15).toFixed(2)} × 10^15 FLOPs`;
-  return compact.format(value);
+  return (learningAxes[axis] || learningAxes.tokens).formatBudget(value);
 }
 
 function updateLearningStory(summary, axis) {
@@ -561,6 +594,7 @@ function updateThroughputExplanation(summary, metric) {
     `Why ${names[extremes.laggard.variant]} performed poorly`,
   );
   setText("#throughput-explanation-laggard", explanation.laggard);
+  setText("#throughput-explanation-groups", explanation.groups);
   setText(
     "#throughput-explanation-compromise",
     `The compromise: ${explanation.compromise}`,
@@ -714,37 +748,58 @@ function formatSigned(value) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(3)}`;
 }
 
-function updateRetrievalStory(task, configuration, distanceBucket, contexts, rows) {
+function updateRetrievalStory(
+  task,
+  configuration,
+  distanceBucket,
+  contexts,
+  rows,
+  evidenceAvailable,
+) {
   const content = readStoryContent("retrieval-story-content");
   const summary = summarizeRetrievalHeatmap(rows, contexts);
   const taskContent = content.tasks?.[task];
   const configurationContent = content.configurations?.[configuration];
   const distanceContent = content.distances?.[distanceBucket];
   if (!summary || !taskContent || !configurationContent || !distanceContent) return;
-  updateOptionStory("retrieval-story", {
+  const metricContent = evidenceAvailable ? content : content.fallback;
+  const best = evidenceAvailable ? summary.strongest : summary.weakest;
+  const worst = evidenceAvailable ? summary.weakest : summary.strongest;
+  const formatMetric = evidenceAvailable
+    ? formatSigned
+    : (value) => value.toFixed(3);
+  const ranking = [...summary.byVariant]
+    .sort((left, right) => evidenceAvailable
+      ? right.mean - left.mean
+      : left.mean - right.mean);
+  updateOptionStory("retrieval-story", storyView(content, {
     eyebrow: taskContent.label,
     title: content.title,
-    graph: content.graph,
-    taskHeading: content.taskHeading,
+    graph: metricContent.graph,
     task: taskContent.meaning,
-    driverHeading: content.driverHeading,
-    driver: content.driver,
-    tradeoffHeading: content.tradeoffHeading,
+    driverHeading: metricContent.driverHeading,
+    driver: metricContent.driver,
     tradeoff: `${configurationContent.meaning} ${distanceContent.meaning}`,
-    conclusion: content.conclusion,
-  }, {
+    groupsHeading: metricContent.groupsHeading,
+    groups: metricContent.groups,
+    conclusion: metricContent.conclusion,
+  }), {
     taskLabel: taskContent.label,
     configurationLabel: configurationContent.label,
     distanceLabel: distanceContent.label,
-    mean: formatSigned(summary.mean),
+    mean: formatMetric(summary.mean),
     positiveCount: String(summary.positiveCount),
     measuredCount: String(summary.measuredCount),
-    strongest: names[summary.strongest.variant] || summary.strongest.variant,
-    strongestContext: compact.format(summary.strongest.context),
-    strongestMean: formatSigned(summary.strongest.mean),
-    weakest: names[summary.weakest.variant] || summary.weakest.variant,
-    weakestContext: compact.format(summary.weakest.context),
-    weakestMean: formatSigned(summary.weakest.mean),
+    best: names[best.variant] || best.variant,
+    bestContext: compact.format(best.context),
+    bestMean: formatMetric(best.mean),
+    worst: names[worst.variant] || worst.variant,
+    worstContext: compact.format(worst.context),
+    worstMean: formatMetric(worst.mean),
+    variantRanking: ranking
+      .map(({ variant, mean }) =>
+        `${names[variant] || variant} ${formatMetric(mean)}`)
+      .join("; "),
   });
 }
 
@@ -840,9 +895,14 @@ function renderRetrieval(retrieval, task, configuration, distanceBucket) {
       `${task}, and ${distanceBucket} distance.`
     : `No recipe has a supported ${labels.short} measurement for ${configuration}, ` +
       `${task}, and ${distanceBucket} distance.`);
-  if (evidenceAvailable) {
-    updateRetrievalStory(task, configuration, distanceBucket, contexts, rows);
-  }
+  updateRetrievalStory(
+    task,
+    configuration,
+    distanceBucket,
+    contexts,
+    rows,
+    evidenceAvailable,
+  );
 }
 
 async function setupRetrieval() {
@@ -942,6 +1002,8 @@ function updateRoutingStory(variant, layer, seedCount, utilization) {
     driver: content.driver,
     tradeoffHeading: content.tradeoffHeading,
     tradeoff: variantContent.tradeoff,
+    groupsHeading: content.groupsHeading,
+    groups: content.groups,
     conclusion: content.conclusion,
   }, {
     variant: names[variant] || variant,
@@ -955,6 +1017,9 @@ function updateRoutingStory(variant, layer, seedCount, utilization) {
     entropy: typeof utilization.normalizedEntropy === "number"
       ? `${(utilization.normalizedEntropy * 100).toFixed(1)}% of maximum`
       : "unavailable",
+    expertShares: utilization.experts
+      .map(({ expert, mean }) => `Expert ${expert}: ${formatPercent(mean)}`)
+      .join("; "),
   });
 }
 
@@ -1066,37 +1131,45 @@ async function setupRouting() {
   renderRoutingStability(routing);
 }
 
-function updateAttentionStory(variant, layer, selected, weights) {
+function attentionSelection(layer, selected) {
+  const isMean = selected === "mean";
+  return {
+    weights: isMean
+      ? layer.mean_weights
+      : layer.heads.find((item) => String(item.head) === selected)?.weights,
+    label: isMean ? "mean across heads" : `head ${selected}`,
+    meaningKey: isMean ? "selectionMean" : "selectionHead",
+  };
+}
+
+function updateAttentionStory(variant, layer, selection, heads) {
   const content = readStoryContent("attention-story-content");
   const architecture = content.variants?.[variant];
-  const summary = summarizeAttentionWeights(weights);
+  const summary = summarizeAttentionWeights(selection.weights);
   if (!architecture || !summary) return;
-  const headLabel = selected === "mean" ? "mean across heads" : `head ${selected}`;
-  updateOptionStory("attention-story", {
+  updateOptionStory("attention-story", storyView(content, {
     eyebrow: `${names[variant] || variant} · layer ${layer}`,
-    title: content.title,
-    graph: content.graph,
-    driverHeading: content.driverHeading,
-    driver: content.driver,
-    tradeoffHeading: content.tradeoffHeading,
     tradeoff: architecture,
-    conclusion: content.conclusion,
-  }, {
+  }), {
     variant: names[variant] || variant,
     layer: String(layer),
-    headLabel,
+    headLabel: selection.label,
     selfMass: formatPercent(summary.selfMass),
     recentMass: formatPercent(summary.recentMass),
     meanDistance: summary.meanBackwardDistance.toFixed(1),
-    selectionMeaning: selected === "mean"
-      ? content.selectionMean
-      : content.selectionHead,
+    headComparison: heads
+      .map(({ head, weights: headWeights }) => {
+        const headSummary = summarizeAttentionWeights(headWeights);
+        return `Head ${head}: ${formatPercent(headSummary.recentMass)}`;
+      })
+      .join("; "),
+    selectionMeaning: content[selection.meaningKey],
   });
 }
 
 function updateUnsupportedAttentionStory(variant, reason) {
   const content = readStoryContent("attention-story-content");
-  updateOptionStory("attention-story", {
+  updateOptionStory("attention-story", storyView({}, {
     eyebrow: content.unsupportedEyebrow,
     title: content.unsupportedTitle,
     graph: content.unsupportedGraph,
@@ -1104,8 +1177,39 @@ function updateUnsupportedAttentionStory(variant, reason) {
     driver: content.unsupportedDriver,
     tradeoffHeading: content.unsupportedTradeoffHeading,
     tradeoff: content.unsupportedTradeoff,
+    groupsHeading: content.unsupportedGroupsHeading,
+    groups: content.unsupportedGroups,
     conclusion: content.unsupportedConclusion,
-  }, {
+  }), {
+    variant: names[variant] || variant,
+    reason,
+  });
+}
+
+function updateAttentionLoadingStory(variant) {
+  const content = readStoryContent("attention-story-content");
+  updateOptionStory("attention-story", storyView({}, {
+    eyebrow: content.loadingEyebrow,
+    title: content.loadingTitle,
+    graph: content.loadingGraph,
+    conclusion: content.loadingConclusion,
+  }), {
+    variant: names[variant] || variant,
+  });
+}
+
+function updateAttentionFailureStory(variant, reason) {
+  const content = readStoryContent("attention-story-content");
+  updateOptionStory("attention-story", storyView({}, {
+    eyebrow: content.failureEyebrow,
+    title: content.failureTitle,
+    graph: content.failureGraph,
+    driverHeading: content.failureDriverHeading,
+    driver: content.failureDriver,
+    tradeoffHeading: content.failureTradeoffHeading,
+    tradeoff: content.failureTradeoff,
+    conclusion: content.failureConclusion,
+  }), {
     variant: names[variant] || variant,
     reason,
   });
@@ -1120,22 +1224,19 @@ async function setupAttention() {
   if (!variantSelect || !layerSelect || !headSelect || !status || !chart) return;
   const index = await fetchJson(root.dataset.attentionIndexUrl);
   let payload = null;
+  let requestId = 0;
   const render = () => {
     if (!payload) return;
     const layer = payload.layers.find((item) => String(item.layer) === layerSelect.value);
     if (!layer) return;
-    const selected = headSelect.value;
-    const weights = selected === "mean"
-      ? layer.mean_weights
-      : layer.heads.find((item) => String(item.head) === selected)?.weights;
-    if (!weights) return;
-    const label = selected === "mean" ? "mean across heads" : "head " + selected;
+    const selection = attentionSelection(layer, headSelect.value);
+    if (!selection.weights) return;
     status.textContent = names[payload.variant] + " · layer " + layer.layer + " · " +
-      label + " · " + weights.length + " tokens";
-    updateAttentionStory(payload.variant, layer.layer, selected, weights);
+      selection.label + " · " + selection.weights.length + " tokens";
+    updateAttentionStory(payload.variant, layer.layer, selection, layer.heads);
     renderPlot(chart, [{
       type: "heatmap",
-      z: weights,
+      z: selection.weights,
       x: payload.tokens,
       y: payload.tokens,
       zmin: 0,
@@ -1150,22 +1251,28 @@ async function setupAttention() {
     });
   };
   const loadVariant = async () => {
-    const entry = attentionAssetFor(index, variantSelect.value);
+    const currentRequest = ++requestId;
+    const requestedVariant = variantSelect.value;
+    const entry = attentionAssetFor(index, requestedVariant);
+    payload = null;
+    chart.hidden = true;
+    layerSelect.disabled = true;
+    headSelect.disabled = true;
+    layerSelect.replaceChildren();
+    headSelect.replaceChildren();
     if (entry.status !== "supported") {
-      payload = null;
-      chart.hidden = true;
-      layerSelect.replaceChildren();
-      headSelect.replaceChildren();
       status.textContent = entry.reason ||
         "A pairwise attention matrix is not defined for this recipe.";
       updateChartData(chart, [], status.textContent);
-      updateUnsupportedAttentionStory(variantSelect.value, status.textContent);
+      updateUnsupportedAttentionStory(requestedVariant, status.textContent);
       return;
     }
-    status.textContent = "Loading " + names[variantSelect.value] + " attention…";
-    chart.hidden = true;
+    status.textContent = "Loading " + names[requestedVariant] + " attention…";
+    updateAttentionLoadingStory(requestedVariant);
     try {
-      payload = await fetchJson(root.dataset.attentionBaseUrl + entry.asset);
+      const response = await fetchJson(root.dataset.attentionBaseUrl + entry.asset);
+      if (currentRequest !== requestId || requestedVariant !== variantSelect.value) return;
+      payload = response;
       layerSelect.replaceChildren(...payload.layers.map(({ layer }) =>
         new Option("Layer " + layer, String(layer))));
       const heads = payload.layers[0]?.heads || [];
@@ -1173,11 +1280,17 @@ async function setupAttention() {
         new Option("Mean", "mean"),
         ...heads.map(({ head }) => new Option("Head " + head, String(head))),
       );
+      layerSelect.disabled = false;
+      headSelect.disabled = false;
       chart.hidden = false;
       render();
     } catch (error) {
+      if (currentRequest !== requestId || requestedVariant !== variantSelect.value) return;
       payload = null;
-      status.textContent = error.message;
+      const reason = error instanceof Error ? error.message : String(error);
+      status.textContent = "Attention explorer unavailable: " + reason;
+      updateChartData(chart, [], status.textContent);
+      updateAttentionFailureStory(requestedVariant, reason);
     }
   };
   variantSelect.addEventListener("change", loadVariant);
@@ -1217,9 +1330,19 @@ async function initialize() {
 }
 
 initialize().catch((error) => {
+  const message = error instanceof Error ? error.message : String(error);
   for (const loading of root.querySelectorAll(".tvc-loading")) {
-    loading.textContent = "Interactive data could not be loaded: " + error.message;
+    loading.textContent = "Interactive data could not be loaded: " + message;
   }
   const status = root.querySelector("#attention-status");
-  if (status) status.textContent = "Attention explorer unavailable: " + error.message;
+  if (status) status.textContent = "Attention explorer unavailable: " + message;
+  for (const panelId of [
+    "learning-story",
+    "context-story",
+    "retrieval-story",
+    "routing-story",
+    "attention-story",
+  ]) {
+    showStoryFailure(panelId, message);
+  }
 });

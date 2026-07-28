@@ -42,6 +42,8 @@ test("theme and mobile navigation remain usable", async ({ page }) => {
 });
 
 test("case-study route initializes frozen interactive evidence", async ({ page }) => {
+  page.on("pageerror", (error) => console.error("PAGE ERROR:", error));
+  page.on("console", (message) => console.error("BROWSER:", message.text()));
   await page.goto("/projects/transformer-variants/");
 
   await expect(
@@ -92,6 +94,9 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#learning-story [data-story='graph']")).toContainText(
     "hours",
   );
+  await expect(page.locator("#learning-story [data-story='groups']")).toContainText(
+    "Interleaved and deep Mixture of Experts are again nearly identical",
+  );
 
   await expect(page.locator("#throughput-explanation-title")).toHaveText(
     "Grouped-Query Attention led; Mixture of Experts trailed",
@@ -101,6 +106,9 @@ test("case-study controls update every interactive evidence view", async ({
   );
   await expect(page.locator("#throughput-explanation-compromise")).toContainText(
     "Mixture of Experts was slowest",
+  );
+  await expect(page.locator("#throughput-explanation-groups")).toContainText(
+    "two partial expert recipes form another tight pair",
   );
 
   const cachedDecode = page.getByRole("button", {
@@ -120,6 +128,9 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#throughput-explanation-compromise")).toContainText(
     "Mixture of Experts decodes at 96.2 tokens/s",
   );
+  await expect(page.locator("#throughput-explanation-groups")).toContainText(
+    "identical expert-layer count produces the dominant similarity",
+  );
 
   await page.getByRole("button", { name: "4K prompt prefill" }).click();
   await expect(page.locator("#throughput-explanation-title")).toHaveText(
@@ -131,6 +142,9 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#throughput-explanation-compromise")).toContainText(
     "no exact distant retrieval",
   );
+  await expect(page.locator("#throughput-explanation-groups")).toContainText(
+    "three expert recipes cluster just below it",
+  );
 
   await expect(page.locator("#context-story [data-story='title']")).toContainText(
     "remain stable at 4K",
@@ -141,6 +155,9 @@ test("case-study controls update every interactive evidence view", async ({
   );
   await expect(page.locator("#context-story [data-story='title']")).toContainText(
     "fastest 4K prefill",
+  );
+  await expect(page.locator("#context-story [data-story='groups']")).toContainText(
+    "Modern and all three expert recipes cluster much lower",
   );
 
   await expect(page.locator("#retrieval-story [data-story='title']")).toContainText(
@@ -168,6 +185,12 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#retrieval-story [data-story='tradeoff']")).toContainText(
     "longest gap",
   );
+  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
+    "complete ranking",
+  );
+  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
+    "Mixture of Experts",
+  );
 
   await page.locator("#routing-variant").selectOption("moe_deep");
   await expect(page.locator("#routing-status")).toContainText(
@@ -185,6 +208,9 @@ test("case-study controls update every interactive evidence view", async ({
   );
   await expect(page.locator("#routing-story [data-story='driver']")).toContainText(
     "normalized entropy",
+  );
+  await expect(page.locator("#routing-story [data-story='groups']")).toContainText(
+    "Expert 0:",
   );
 
   await page.locator("#attention-variant").selectOption("alibi");
@@ -208,6 +234,9 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#attention-story [data-story='graph']")).toContainText(
     "probability stays",
   );
+  await expect(page.locator("#attention-story [data-story='groups']")).toContainText(
+    "Head 0:",
+  );
   await page.locator("#attention-variant").selectOption("linear");
   await expect(page.locator("#attention-status")).toContainText(
     "does not define a conventional pairwise softmax attention matrix",
@@ -215,6 +244,9 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#attention-chart")).toBeHidden();
   await expect(page.locator("#attention-story [data-story='title']")).toHaveText(
     "Causal linear has no conventional pairwise attention map",
+  );
+  await expect(page.locator("#attention-story [data-story='groups']")).toContainText(
+    "validation loss",
   );
 
   const recipeSort = page.getByRole("button", { name: /^Recipe/ });
@@ -225,6 +257,63 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(firstRecipe).not.toHaveText(initialRecipe ?? "");
   await recipeSort.click();
   await expect(recipeSort.locator("..")).toHaveAttribute("aria-sort", "descending");
+});
+
+test("retrieval explanation follows the negative-log-likelihood fallback", async ({
+  page,
+}) => {
+  await page.route("**/retrieval.json*", async (route) => {
+    const response = await route.fetch();
+    const retrieval = await response.json();
+    retrieval.schema_version = 1;
+    await route.fulfill({ response, json: retrieval });
+  });
+  await page.goto("/projects/transformer-variants/");
+  await expect(page.locator("#retrieval-score-description")).toContainText(
+    "lower values indicate greater confidence",
+  );
+  await expect(page.locator("#retrieval-story [data-story='graph']")).toContainText(
+    "negative log-likelihood",
+  );
+  await expect(page.locator("#retrieval-story [data-story='driver']")).toContainText(
+    "lowest negative log-likelihood",
+  );
+});
+
+test("attention explanation ignores a stale asset response", async ({ page }) => {
+  await page.route("**/attention_patterns_modern.json*", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await route.continue();
+  });
+  await page.goto("/projects/transformer-variants/");
+  await page.locator("#attention-variant").selectOption("alibi");
+  await expect(page.locator("#attention-status")).toContainText("ALiBI · layer", {
+    timeout: 20_000,
+  });
+  await expect(page.locator("#attention-story [data-story='title']")).toContainText(
+    "ALiBI · layer",
+  );
+  await expect(page.locator("#attention-story [data-story='title']")).not.toContainText(
+    "Modern",
+  );
+});
+
+test("attention asset failure replaces stale controls and explanation", async ({
+  page,
+}) => {
+  await page.route("**/attention_patterns_alibi.json*", (route) => route.abort());
+  await page.goto("/projects/transformer-variants/");
+  await expect(page.locator("#attention-status")).toContainText("Modern · layer", {
+    timeout: 20_000,
+  });
+  await page.locator("#attention-variant").selectOption("alibi");
+  await expect(page.locator("#attention-story [data-story='title']")).toHaveText(
+    "Could not load ALiBI attention",
+  );
+  await expect(page.locator("#attention-story [data-story='graph']")).not.toBeEmpty();
+  await expect(page.locator("#attention-layer")).toBeDisabled();
+  await expect(page.locator("#attention-head")).toBeDisabled();
+  await expect(page.locator("#attention-chart")).toBeHidden();
 });
 
 test("legacy chapter routes redirect to matching consolidated anchors", async ({

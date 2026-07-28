@@ -121,6 +121,10 @@ describe("production case-study data transforms", () => {
       measuredCount: 4,
       strongest: { variant: "alibi", context: 512, mean: 0.5 },
       weakest: { variant: "modern", context: 1024, mean: -0.1 },
+      byVariant: [
+        { variant: "alibi", mean: 0.3, measuredCount: 2 },
+        { variant: "modern", mean: 0.05, measuredCount: 2 },
+      ],
     });
   });
 

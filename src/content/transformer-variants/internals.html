@@ -45,6 +45,8 @@
       "driverHeading": "What this layer shows",
       "driver": "Expert [[mostExpert]] is selected most at [[mostShare]], while Expert [[leastExpert]] is selected least at [[leastShare]]. The spread is [[spread]] percentage points and normalized entropy is [[entropy]].",
       "tradeoffHeading": "What this placement gains and costs",
+      "groupsHeading": "How all eight experts compare",
+      "groups": "The complete selection-share profile is [[expertShares]]. Shares close to 12.5% form one balanced group; larger departures identify relative preferences in this layer. Expert numbers are exchangeable IDs rather than fixed semantic roles, so similar utilization does not mean the experts learned identical functions.",
       "conclusion": "Broad use means the router did not collapse onto one or two experts. It is a health check, not proof that routing caused the quality result.",
       "variants": {
         "moe": {
@@ -70,6 +72,9 @@
       role="img"
       aria-label="Interactive expert utilization for the selected Mixture of Experts recipe and layer"
     ><p class="tvc-loading">Loading expert utilization…</p></div>
+    <noscript>
+      <p>Normalized router entropy is 99.79%–99.86% of its maximum across placements, indicating broad expert use rather than collapse.</p>
+    </noscript>
     <figcaption>
       <div class="tvc-option-story" id="routing-story" aria-live="polite" aria-atomic="true">
         <p class="tvc-option-story-eyebrow" data-story="eyebrow">Selected router layer</p>
@@ -78,6 +83,7 @@
         <div class="tvc-option-story-grid">
           <article><h4 data-story="driver-heading"></h4><p data-story="driver"></p></article>
           <article><h4 data-story="tradeoff-heading"></h4><p data-story="tradeoff"></p></article>
+          <article><h4 data-story="groups-heading"></h4><p data-story="groups"></p></article>
         </div>
         <p class="tvc-option-story-conclusion" data-story="conclusion"></p>
       </div>
@@ -145,6 +151,16 @@
         whereas ALiBI spreads activation energy across more directions but predicts
         held-out tokens less accurately.
       </p>
+      <p>
+        Between those groups, interleaved Mixture of Experts (10.07),
+        Grouped-Query Attention (9.84), and full Mixture of Experts (9.48) form a
+        middle cluster; Vanilla is lower at 6.25 before causal linear attention at
+        4.74. The expert recipes therefore do not move together: placing experts only
+        in deep layers preserves a broader activation spectrum than routing every
+        layer, even though the full expert model predicts held-out text better. The
+        chart should be read as a family of depth profiles as well as a ranking of
+        their averages.
+      </p>
       <h3>Why that pattern matters—and what it does not prove</h3>
       <p>
         Architectural constraints change how the residual stream uses dimensions.
@@ -200,6 +216,18 @@
         architecture-aligned transformations that can be tested by a future surgical
         ablation.
       </p>
+      <p>
+        Averaged across adjacent pairs, ALiBI is highest at 0.875. Pure and
+        interleaved Sliding-Window Attention cluster at 0.859 and 0.857;
+        Grouped-Query Attention and Modern follow together at 0.848. Deep,
+        interleaved, and full Mixture of Experts occupy a close 0.831–0.841 group,
+        although their largest drops occur at different layers because their expert
+        placements differ. Causal linear attention averages 0.818 because its sharp
+        first transition is followed by unusually similar layers, and Vanilla
+        averages 0.801 with a less structured sequence of rises and falls. These
+        averages describe overall preservation; the layer at which each curve drops
+        is the more architecture-specific evidence.
+      </p>
     </figcaption>
   </figure>
 </section>
@@ -240,9 +268,23 @@
       "driverHeading": "What the selected pattern shows",
       "driver": "The probability-weighted key lies [[meanDistance]] tokens behind its query on average. Changing the layer or head reveals whether that concentration is shared or specialized.",
       "tradeoffHeading": "How the architecture shapes it",
+      "groupsHeading": "How every head in this layer compares",
+      "groups": "Average probability within the current or previous four positions is [[headComparison]]. Heads with similar percentages form a shared locality pattern; large gaps indicate specialization. The mean can conceal those differences, so the selected head should be interpreted alongside the complete layer profile.",
       "conclusion": "[[selectionMeaning]] The map describes one frozen 64-token sample; it does not prove that the model retrieves facts or reasons correctly.",
       "selectionMean": "The mean combines all heads and can hide specialized behavior; choose one head to inspect that variation.",
       "selectionHead": "This single head may specialize; compare it with Mean before treating it as representative of the layer.",
+      "loadingEyebrow": "Loading attention data",
+      "loadingTitle": "Loading [[variant]] attention…",
+      "loadingGraph": "The heatmap and its explanation will update together when the selected tensor is ready.",
+      "loadingConclusion": "Layer and head controls remain disabled until the data is available.",
+      "failureEyebrow": "Attention data unavailable",
+      "failureTitle": "Could not load [[variant]] attention",
+      "failureGraph": "[[reason]]",
+      "failureDriverHeading": "What remains valid",
+      "failureDriver": "The project-level quality, speed, memory, and long-context measurements do not depend on this visualization.",
+      "failureTradeoffHeading": "What is unavailable",
+      "failureTradeoff": "This selection’s layer-by-layer and head-by-head probability pattern cannot be interpreted without its frozen tensor.",
+      "failureConclusion": "Reload the page to retry the asset request.",
       "unsupportedEyebrow": "Unsupported attention view",
       "unsupportedTitle": "[[variant]] has no conventional pairwise attention map",
       "unsupportedGraph": "[[reason]] The interface reports this as unsupported instead of manufacturing a misleading heatmap.",
@@ -250,6 +292,8 @@
       "unsupportedDriver": "Causal linear attention summarizes the prefix in running statistics. Its state can be inspected, but it is not a matrix of query-to-key softmax probabilities.",
       "unsupportedTradeoffHeading": "What linear attention trades",
       "unsupportedTradeoff": "The fixed-size state offers bounded memory, yet this implementation has slow serial prefix updates and the weakest supported 4K prefill rate.",
+      "unsupportedGroupsHeading": "What can be compared instead",
+      "unsupportedGroups": "Use the fixed-state memory measurement, validation loss, long-context perplexity, and realized prefill speed. Head-by-head softmax similarities are not defined for this operator.",
       "unsupportedConclusion": "Unsupported is an architectural distinction, not missing experimental data.",
       "variants": {
         "modern": "Modern uses full attention with rotary position embeddings. Its map can place probability anywhere in the visible causal prefix.",
@@ -272,7 +316,7 @@
       role="img"
       aria-label="Interactive selected causal attention heatmap"
     ></div>
-    <noscript><p>The layer/head attention explorer requires JavaScript; the frozen attention tensors remain available in the linked project repository.</p></noscript>
+    <noscript><p>Exact layer and head maps require JavaScript. The frozen tensors and architecture-level interpretation remain available in the linked project repository.</p></noscript>
     <figcaption>
       <div class="tvc-option-story" id="attention-story" aria-live="polite" aria-atomic="true">
         <p class="tvc-option-story-eyebrow" data-story="eyebrow">Selected attention map</p>
@@ -281,6 +325,7 @@
         <div class="tvc-option-story-grid">
           <article><h4 data-story="driver-heading"></h4><p data-story="driver"></p></article>
           <article><h4 data-story="tradeoff-heading"></h4><p data-story="tradeoff"></p></article>
+          <article><h4 data-story="groups-heading"></h4><p data-story="groups"></p></article>
         </div>
         <p class="tvc-option-story-conclusion" data-story="conclusion"></p>
       </div>

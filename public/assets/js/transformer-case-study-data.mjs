@@ -104,6 +104,18 @@ export function summarizeRetrievalHeatmap(rows, contexts) {
         : []));
   if (!measurements.length) return null;
   const ordered = [...measurements].sort((left, right) => left.mean - right.mean);
+  const byVariant = rows.flatMap(({ variant, cells }) => {
+    const means = cells
+      .map((cell) => cell?.mean)
+      .filter((mean) => typeof mean === "number");
+    return means.length
+      ? [{
+        variant,
+        mean: means.reduce((sum, mean) => sum + mean, 0) / means.length,
+        measuredCount: means.length,
+      }]
+      : [];
+  }).sort((left, right) => right.mean - left.mean);
   return {
     mean: measurements.reduce((sum, point) => sum + point.mean, 0)
       / measurements.length,
@@ -111,6 +123,7 @@ export function summarizeRetrievalHeatmap(rows, contexts) {
     measuredCount: measurements.length,
     strongest: ordered.at(-1),
     weakest: ordered[0],
+    byVariant,
   };
 }
 
