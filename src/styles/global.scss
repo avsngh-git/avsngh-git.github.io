@@ -195,7 +195,7 @@ h2 {
 .about-copy > p:not(.section-kicker) {
   width: 100%;
   max-width: none;
-  font-size: 1.1rem;
+  font-size: clamp(1.25rem, 1.5vw, 1.4rem);
   line-height: 1.8;
 }
 

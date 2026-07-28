@@ -81,8 +81,9 @@ export const portfolio = {
     {
       title: "Statistical Inference & Uncertainty",
       description:
-        "I evaluate model stability, test statistical assumptions, and build uncertainty-quantification methods for decisions that need calibrated, interpretable evidence.",
+        "Grounded in probability theory, I evaluate model stability, test statistical assumptions, and build uncertainty-quantification methods for decisions that need calibrated, interpretable evidence.",
       skills: [
+        "Probability theory",
         "Statistical inference",
         "Uncertainty quantification",
         "Predictive modeling",
@@ -94,10 +95,12 @@ export const portfolio = {
     {
       title: "Machine Learning & Deep Learning",
       description:
-        "I design controlled experiments around neural architectures, robustness, representation behavior, and the trade-offs between statistical quality and realized system performance.",
+        "I design controlled experiments across supervised, unsupervised, and reinforcement learning, with a focus on neural architectures, robustness, representation behavior, and realized system performance.",
       skills: [
         "Machine learning",
         "Deep learning",
+        "Unsupervised learning",
+        "Reinforcement learning",
         "PyTorch",
         "TensorFlow",
         "Transformer architectures",
