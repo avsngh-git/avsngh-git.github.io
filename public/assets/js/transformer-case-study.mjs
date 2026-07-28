@@ -822,6 +822,14 @@ function updateRetrievalStory(
     .sort((left, right) => evidenceAvailable
       ? right.mean - left.mean
       : left.mean - right.mean);
+  const expertVariants = new Set(["moe", "moe_interleaved", "moe_deep"]);
+  const expertRanking = ranking.filter(({ variant }) => expertVariants.has(variant));
+  const formatRanking = (entries) => entries.length
+    ? entries
+      .map(({ variant, mean }) =>
+        `${names[variant] || variant} ${formatMetric(mean)}`)
+      .join("; ")
+    : content.unsupportedRanking;
   updateOptionStory("retrieval-story", storyView(content, {
     eyebrow: taskContent.label,
     title: content.title,
@@ -848,6 +856,20 @@ function updateRetrievalStory(
       .map(({ variant, mean }) =>
         `${names[variant] || variant} ${formatMetric(mean)}`)
       .join("; "),
+    expertRanking: formatRanking(expertRanking),
+    expertLeader: expertRanking.length
+      ? names[expertRanking[0].variant] || expertRanking[0].variant
+      : content.unsupportedExpert,
+    nonExpertRanking: formatRanking(
+      ranking.filter(({ variant }) => !expertVariants.has(variant)),
+    ),
+    closestPairs: summary.closestPairs.length
+      ? summary.closestPairs
+        .map(({ left, right, gap }) =>
+          `${names[left.variant] || left.variant} and ` +
+          `${names[right.variant] || right.variant} (gap ${gap.toFixed(3)})`)
+        .join("; ")
+      : content.unsupportedRanking,
   });
 }
 

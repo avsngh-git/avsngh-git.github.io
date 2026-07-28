@@ -116,6 +116,14 @@ export function summarizeRetrievalHeatmap(rows, contexts) {
       }]
       : [];
   }).sort((left, right) => right.mean - left.mean);
+  const closestPairs = byVariant
+    .slice(0, -1)
+    .map((left, index) => {
+      const right = byVariant[index + 1];
+      return { left, right, gap: Math.abs(left.mean - right.mean) };
+    })
+    .sort((left, right) => left.gap - right.gap)
+    .slice(0, 3);
   return {
     mean: measurements.reduce((sum, point) => sum + point.mean, 0)
       / measurements.length,
@@ -124,6 +132,7 @@ export function summarizeRetrievalHeatmap(rows, contexts) {
     strongest: ordered.at(-1),
     weakest: ordered[0],
     byVariant,
+    closestPairs,
   };
 }
 

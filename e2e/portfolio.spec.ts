@@ -187,7 +187,16 @@ test("case-study controls update every interactive evidence view", async ({
     "complete ranking",
   );
   await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
-    "Mixture of Experts",
+    "The three expert recipes compare as",
+  );
+  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
+    "The remaining recipes compare as",
+  );
+  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
+    "The numerically closest adjacent pairs are",
+  );
+  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
+    "gap",
   );
 
   await page.locator("#routing-variant").selectOption("moe_deep");

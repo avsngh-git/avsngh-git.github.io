@@ -125,6 +125,11 @@ describe("production case-study data transforms", () => {
         { variant: "alibi", mean: 0.3, measuredCount: 2 },
         { variant: "modern", mean: 0.05, measuredCount: 2 },
       ],
+      closestPairs: [{
+        left: { variant: "alibi", mean: 0.3, measuredCount: 2 },
+        right: { variant: "modern", mean: 0.05, measuredCount: 2 },
+        gap: 0.25,
+      }],
     });
   });
 
