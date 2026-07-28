@@ -140,7 +140,7 @@ export const portfolio = {
     {
       title: "M.Sc. Mathematical Statistics and Machine Learning",
       organization: "Stockholm University",
-      period: "2024 – Present",
+      period: "2024 – 2026",
       description:
         "Focused on probability theory, statistical inference, data structures, and the mathematical properties of deep neural architectures.",
       kind: "education",
