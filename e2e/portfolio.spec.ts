@@ -77,12 +77,21 @@ test("case-study controls update every interactive evidence view", async ({
     timeout: 20_000,
   });
 
+  await expect(page.locator("#learning-story [data-story='title']")).toContainText(
+    "Mixture of Experts",
+  );
   const wallClock = page.getByRole("button", { name: /Wall-clock/ });
   await wallClock.click();
   await expect(wallClock).toHaveAttribute("aria-pressed", "true");
   await expect(
     page.locator("#learning-curves-chart-accessible-data-summary"),
   ).toContainText("Elapsed training seconds");
+  await expect(page.locator("#learning-story [data-story='title']")).toContainText(
+    "Modern leads",
+  );
+  await expect(page.locator("#learning-story [data-story='graph']")).toContainText(
+    "hours",
+  );
 
   await expect(page.locator("#throughput-explanation-title")).toHaveText(
     "Grouped-Query Attention led; Mixture of Experts trailed",
@@ -123,11 +132,20 @@ test("case-study controls update every interactive evidence view", async ({
     "no exact distant retrieval",
   );
 
+  await expect(page.locator("#context-story [data-story='title']")).toContainText(
+    "remain stable at 4K",
+  );
   await page.locator("#context-metric").selectOption("prefillTokensPerSecond");
   await expect(page.locator("#context-chart-accessible-data-summary")).toContainText(
     "prefillTokensPerSecond",
   );
+  await expect(page.locator("#context-story [data-story='title']")).toContainText(
+    "fastest 4K prefill",
+  );
 
+  await expect(page.locator("#retrieval-story [data-story='title']")).toContainText(
+    "Passkey retrieval",
+  );
   await page.locator("#retrieval-task").selectOption("needle");
   await page
     .locator("#retrieval-configuration")
@@ -141,6 +159,15 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#retrieval-score-description")).toContainText(
     "Positive values mean the planted fact increased",
   );
+  await expect(page.locator("#retrieval-story [data-story='title']")).toHaveText(
+    "Needle-in-a-haystack · RoPE base 100,000 · farthest fact",
+  );
+  await expect(page.locator("#retrieval-story [data-story='graph']")).toContainText(
+    "selected cells",
+  );
+  await expect(page.locator("#retrieval-story [data-story='tradeoff']")).toContainText(
+    "longest gap",
+  );
 
   await page.locator("#routing-variant").selectOption("moe_deep");
   await expect(page.locator("#routing-status")).toContainText(
@@ -153,6 +180,12 @@ test("case-study controls update every interactive evidence view", async ({
   expect(lastLayer).not.toBeNull();
   await page.locator("#routing-layer").selectOption(lastLayer!);
   await expect(page.locator("#routing-status")).toContainText(`layer ${lastLayer}`);
+  await expect(page.locator("#routing-story [data-story='title']")).toContainText(
+    `Deep Mixture of Experts uses its pool at layer ${lastLayer}`,
+  );
+  await expect(page.locator("#routing-story [data-story='driver']")).toContainText(
+    "normalized entropy",
+  );
 
   await page.locator("#attention-variant").selectOption("alibi");
   await expect(page.locator("#attention-status")).toContainText("ALiBI");
@@ -167,11 +200,20 @@ test("case-study controls update every interactive evidence view", async ({
   );
   await page.locator("#attention-head").selectOption("0");
   await expect(page.locator("#attention-status")).toContainText("head 0");
+  await expect(page.locator("#attention-story [data-story='title']")).toHaveText(
+    `ALiBI · layer ${lastAttentionLayer} · head 0`,
+  );
+  await expect(page.locator("#attention-story [data-story='graph']")).toContainText(
+    "probability stays",
+  );
   await page.locator("#attention-variant").selectOption("linear");
   await expect(page.locator("#attention-status")).toContainText(
     "does not define a conventional pairwise softmax attention matrix",
   );
   await expect(page.locator("#attention-chart")).toBeHidden();
+  await expect(page.locator("#attention-story [data-story='title']")).toHaveText(
+    "Causal linear has no conventional pairwise attention map",
+  );
 
   const recipeSort = page.getByRole("button", { name: /^Recipe/ });
   const firstRecipe = page.locator("#variant-comparison tbody tr").first().locator("td").first();
