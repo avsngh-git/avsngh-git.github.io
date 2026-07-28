@@ -42,8 +42,6 @@ test("theme and mobile navigation remain usable", async ({ page }) => {
 });
 
 test("case-study route initializes frozen interactive evidence", async ({ page }) => {
-  page.on("pageerror", (error) => console.error("PAGE ERROR:", error));
-  page.on("console", (message) => console.error("BROWSER:", message.text()));
   await page.goto("/projects/transformer-variants/");
 
   await expect(
