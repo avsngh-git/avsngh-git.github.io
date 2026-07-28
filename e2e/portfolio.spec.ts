@@ -188,7 +188,9 @@ test("case-study controls update every interactive evidence view", async ({
   );
 
   await page.locator("#attention-variant").selectOption("alibi");
-  await expect(page.locator("#attention-status")).toContainText("ALiBI");
+  await expect(page.locator("#attention-status")).toContainText(
+    "ALiBI · layer",
+  );
   const lastAttentionLayer = await page
     .locator("#attention-layer option")
     .last()

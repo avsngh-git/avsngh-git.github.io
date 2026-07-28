@@ -101,7 +101,7 @@ describe("production case-study data transforms", () => {
     expect(commonBudgetSnapshot(summary, "wallclock")).toEqual({
       budget: 10,
       leader: { variant: "modern", budget: 10, loss: 4 },
-      laggard: { variant: "moe", budget: 8, loss: 4.7 },
+      laggard: { variant: "moe", budget: 10, loss: 4.45 },
       measuredCount: 2,
     });
   });
