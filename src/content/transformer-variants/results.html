@@ -57,14 +57,24 @@
         surgical-ablation plan, not from subtracting these two bars.
       </p>
       <p>
-        The complete field separates into four useful groups. Full Mixture of Experts
-        leads at 3.6862; its interleaved and deep variants form a close second group at
-        3.7252 and 3.7311 because both add experts to four layers rather than all
-        eight. Modern is the strongest dense recipe at 3.8099, followed by Vanilla at
-        3.9400. Causal linear attention sits at 4.0782. ALiBI, pure and interleaved
-        Sliding-Window Attention, and Grouped-Query Attention form the final
-        4.1172–4.1807 group. The overlapping seed ranges within that last group make
-        its fine ordering less persuasive than the larger gaps between groups.
+        Full Mixture of Experts leads at 3.6862. Its interleaved and deep variants
+        form a close second group at 3.7252 and 3.7311 because both route four layers
+        rather than all eight.
+      </p>
+      <p>
+        Modern is the strongest dense recipe at 3.8099. Vanilla follows at 3.9400,
+        causal linear attention at 4.0782, and ALiBI at 4.1172. Their five-seed ranges
+        remain separate.
+      </p>
+      <p>
+        Pure and interleaved Sliding-Window Attention overlap substantially at 4.1555
+        and 4.1576. Their shared local mechanism matters more here than whether
+        alternate layers restore global attention.
+      </p>
+      <p>
+        Grouped-Query Attention is last at 4.1807. Its seed range only touches the
+        upper edge of the local recipes, so the four-way ordering should not be
+        described as one uncertainty-overlapping group.
       </p>
     </figcaption>
   </figure>
@@ -75,7 +85,14 @@
         "graph": "The bars rank [[measuredCount]] recipes by end-to-end training tokens per second, including the forward pass, backward pass, and optimizer update. [[leader]] has the highest mean at [[leaderRate]], [[ratio]]× the [[laggardRate]] measured for [[laggard]]. Error bars show variation across five training seeds.",
         "leader": "Grouped-Query Attention uses only two key-value heads for eight query heads, which reduces projection work and active parameters while preserving a regular dense execution path. Its 80.2K tokens/s mean is effectively tied with Sliding-Window Attention at 80.2K once seed variation is considered.",
         "laggard": "The full Mixture of Experts recipe routes every token to two of eight feed-forward experts. Dispatch, gathering, synchronization, and less regular memory access make that conditional path harder to utilize efficiently on this GPU.",
-        "groups": "Four recipes form the fast cluster: Grouped-Query Attention at 80.2K tokens/s, Sliding-Window Attention at 80.2K, ALiBI at 79.8K, and Interleaved Sliding-Window Attention at 79.3K. They all retain regular, non-routed feed-forward computation. Modern sits below them at 69.7K. Vanilla and causal linear attention are similar at 51.3K and 53.4K for different reasons: Vanilla uses a less optimized classic stack, while linear attention loses GPU utilization to a serial recurrence. The two partial expert recipes form another tight pair—36.7K interleaved and 36.5K deep—because both route only four of eight layers and store 77.4M parameters. Interleaving is only slightly faster and gives slightly better loss, 3.7252 versus 3.7311; the number of expert layers matters more here than whether those layers alternate or appear late. Routing all eight layers lowers speed further to 31.2K but improves loss to 3.6862.",
+        "groups": "The ten recipes separate into five practical speed groups.",
+        "groupItems": [
+          "Grouped-Query Attention, Sliding-Window Attention, ALiBI, and interleaved Sliding-Window Attention form the 79.3K–80.2K cluster. All keep regular, non-routed feed-forward computation.",
+          "Modern is alone at 69.7K. Its dense optimized path is regular, but it does more projection and feed-forward work than the fastest recipes.",
+          "Vanilla and causal linear attention sit at 51.3K and 53.4K for different reasons: an older dense stack versus a serial recurrent update that underuses the GPU.",
+          "Interleaved and deep Mixture of Experts are nearly tied at 36.7K and 36.5K because each routes four of eight layers. Placement matters less for speed than the shared routed-layer count.",
+          "Full Mixture of Experts routes all eight layers, so dispatch overhead lowers speed to 31.2K. That extra expert depth also gives the family’s best loss, 3.6862."
+        ],
         "compromise": "Speed is not quality here. Grouped-Query Attention recorded the weakest final validation loss, 4.1807, although it used the fewest active parameters at 48.28M. Mixture of Experts was slowest at 31.2K tokens/s but achieved the best loss, 3.6862, by storing roughly twice as many parameters and activating only selected experts for each token."
       },
       "cachedGenerationTokensPerSecond": {
@@ -83,7 +100,14 @@
         "graph": "The bars rank [[measuredCount]] recipes while generating 128 tokens after a 64-token prompt. Prompt prefill is included, and later tokens reuse the key-value cache. [[leader]] leads at [[leaderRate]], [[ratio]]× [[laggard]] at [[laggardRate]].",
         "leader": "Vanilla follows a simple, mature dense path: learned position lookups, full attention, and a GELU feed-forward network. With no rotary-position transforms, expert dispatch, or recurrent prefix update, this small batch-one workload maps cleanly onto the available kernels.",
         "laggard": "Mixture of Experts still performs top-two routing at every feed-forward block. At batch size one, there are too few tokens to amortize dispatch and expert-kernel overhead, so its additional conditional capacity becomes a latency cost.",
-        "groups": "Vanilla separates from the field at 512.8 tokens/s. ALiBI and Modern form the next dense pair at 364.4 and 336.2. Grouped-Query Attention, Sliding-Window Attention, and its interleaved version cluster tightly at 255.8–257.5; this 64-token prompt plus 128 generated tokens remains inside the 256-token local window, so Sliding-Window Attention cannot yet discard old tokens, and Grouped-Query Attention’s shared key/value heads do not guarantee the lowest batch-one latency. Causal linear attention follows at 178.2. Deep and interleaved Mixture of Experts are nearly tied at 144.2 and 142.4 because both route half the layers; the full expert recipe routes every layer and falls to 95.5.",
+        "groups": "Five serving regimes explain the complete cached-generation ranking.",
+        "groupItems": [
+          "Vanilla leads alone at 512.8 tokens/s because its small batch-one path has no rotary transforms, expert dispatch, or recurrent prefix update.",
+          "ALiBI and Modern form the next dense pair at 364.4 and 336.2. ALiBI’s distance bias is cheaper here than Modern’s rotary-position work.",
+          "Grouped-Query Attention and both Sliding-Window Attention recipes cluster at 255.8–257.5. The 192-token sequence stays inside the 256-token window, so locality cannot yet reduce work.",
+          "Causal linear attention reaches 178.2. Its fixed-state idea saves memory, but the serial implementation prevents that theoretical advantage from becoming low latency.",
+          "Deep and interleaved Mixture of Experts reach 144.2 and 142.4 because both route four layers. Full Mixture of Experts routes all eight and falls to 95.5, while giving the best loss."
+        ],
         "compromise": "Vanilla’s 512.8 tokens/s serving lead comes with 3.9400 validation loss and a learned position table that cannot be evaluated beyond its 1K training length. Mixture of Experts serves much more slowly at 95.5 tokens/s, but its 3.6862 loss is the best measured quality. The right choice depends on whether single-request latency or prediction quality is the binding constraint."
       },
       "cachedDecodeTokensPerSecond": {
@@ -91,7 +115,14 @@
         "graph": "The bars isolate the token-by-token decode loop for [[measuredCount]] recipes: prompt prefill happens before the timer, and each new token reuses cached keys and values. [[leader]] reaches [[leaderRate]], [[ratio]]× [[laggard]] at [[laggardRate]].",
         "leader": "Vanilla again benefits from a compact, regular dense path. Decode at batch size one is dominated by small sequential operations and memory movement, so its straightforward attention and feed-forward kernels have less overhead per token.",
         "laggard": "Mixture of Experts must run the router and launch selected expert computation for every individual decoded token. Sparse arithmetic does not imply low latency when the workload is too small to fill the expert kernels.",
-        "groups": "The steady-state ranking closely matches end-to-end cached generation because decoding 127 timed tokens dominates the short prefill. Vanilla leads at 526.0 tokens/s; ALiBI and Modern follow at 359.3 and 334.6. Sliding-Window Attention, Interleaved Sliding-Window Attention, and Grouped-Query Attention form a 245.6–257.9 cluster. Causal linear attention reaches 179.3. The two half-expert placements remain close—148.7 deep and 143.6 interleaved—while routing every layer reduces the full expert model to 96.2. The small difference between the two partial placements is not evidence that one placement is universally faster; their identical expert-layer count produces the dominant similarity.",
+        "groups": "Decode reproduces five groups because the timed loop dominates the short prefill.",
+        "groupItems": [
+          "Vanilla leads at 526.0 tokens/s. Its simple dense path minimizes overhead for one token at a time.",
+          "ALiBI and Modern follow at 359.3 and 334.6. Their dense kernels remain efficient, with ALiBI avoiding rotary-position transforms.",
+          "Grouped-Query Attention and both Sliding-Window Attention recipes form a 245.6–257.9 cluster. Short batch-one decode does not fully expose their memory or locality advantages.",
+          "Causal linear attention reaches 179.3 because each token advances a serial recurrent state.",
+          "Deep and interleaved Mixture of Experts reach 148.7 and 143.6 because each routes four layers. Full Mixture of Experts routes eight and drops to 96.2, but has better validation loss."
+        ],
         "compromise": "Vanilla is the latency winner at 526.0 tokens/s, but not the quality or long-context winner. Mixture of Experts decodes at 96.2 tokens/s—poor for this metric—while delivering the lowest validation loss. Grouped-Query Attention reduces key-value projections and active parameters, yet at batch one that architectural saving does not translate into the fastest decode."
       },
       "uncachedGenerationTokensPerSecond": {
@@ -99,7 +130,14 @@
         "graph": "The bars rank [[measuredCount]] recipes when the complete growing prefix is recomputed for every generated token. This deliberately expensive baseline shows the cost avoided by caching. [[leader]] reaches [[leaderRate]], [[ratio]]× [[laggard]] at [[laggardRate]].",
         "leader": "ALiBI stays on a regular dense-attention path and adds a comparatively cheap distance bias instead of rotary transforms or expert dispatch. Recomputing the whole prefix repeatedly favored that implementation. The benchmark does not isolate the contribution of any single kernel, so this is an implementation-level result.",
         "laggard": "Without a cache, Mixture of Experts repeatedly recomputes attention and routes the entire growing prefix through selected experts. That magnifies the same dispatch and memory-traffic costs visible in the cached measurements.",
-        "groups": "ALiBI, Vanilla, and Modern form the dense leading group at 355.5, 308.8, and 274.2 tokens/s. Grouped-Query Attention and the two Sliding-Window Attention recipes sit together at 246.1–250.2. The generated sequence grows only to 192 tokens, still below the 256-token window, so the local recipes do not receive their intended long-context work reduction. Causal linear attention drops to 116.8 because every step repeats its serial prefix recurrence. Deep and interleaved Mixture of Experts again form a near tie at 73.1 and 72.4, reflecting the same four routed layers; the full eight-layer expert model is slower at 41.5 but has the best validation loss.",
+        "groups": "Recomputing the prefix separates the field into five architecture-driven groups.",
+        "groupItems": [
+          "ALiBI, Vanilla, and Modern lead at 355.5, 308.8, and 274.2 tokens/s. They retain regular dense computation; ALiBI adds the cheapest positional operation in this implementation.",
+          "Grouped-Query Attention and both Sliding-Window Attention recipes cluster at 246.1–250.2. The sequence ends at 192 tokens, below the 256-token window, so locality saves no work yet.",
+          "Causal linear attention reaches 116.8 because every generated token repeats its serial prefix recurrence.",
+          "Deep and interleaved Mixture of Experts are nearly tied at 73.1 and 72.4 because each routes four layers.",
+          "Full Mixture of Experts routes eight layers and falls to 41.5, but that larger conditional-capacity path delivers the best validation loss."
+        ],
         "compromise": "ALiBI leads speed at 355.5 tokens/s and also has the best 4K tail perplexity, 74.35, but its in-range validation loss is weaker at 4.1172. Mixture of Experts falls to 41.5 tokens/s yet retains the best validation loss. In normal generation a working key-value cache should be preferred; this view mainly reveals how architecture overhead compounds when earlier tokens are recomputed."
       },
       "prefillTokensPerSecond4k": {
@@ -107,7 +145,14 @@
         "graph": "The bars rank [[measuredCount]] supported recipes while processing a 4,096-token prompt in one pass. [[leader]] leads at [[leaderRate]], [[ratio]]× [[laggard]] at [[laggardRate]]. Vanilla is absent—not zero—because its learned position table ends at 1K tokens.",
         "leader": "Sliding-Window Attention lets each token attend to at most the previous 255 tokens rather than the full 4K prefix. That bounded local workload substantially reduces long-prompt attention work and produced the strongest realized prefill rate.",
         "laggard": "Causal linear attention has attractive linear asymptotic scaling, but this implementation updates prefix statistics through a serial, unfused recurrence. On the L4, poor parallel utilization outweighed the reduction in theoretical work.",
-        "groups": "Sliding-Window Attention leads clearly at 204.9K tokens/s. Its interleaved version follows at 176.0K because only half its layers keep the bounded local window; the other half still perform global attention. Grouped-Query Attention at 168.9K and ALiBI at 160.1K complete the fast group, but their result comes from the measured kernel and memory paths rather than the same locality mechanism. Modern falls to 45.9K under global 4K attention. The three expert recipes cluster just below it: 43.4K interleaved, 43.0K deep, and 40.2K full. The two partial placements route four layers and are therefore almost identical; routing all eight layers adds more dispatch. Causal linear attention is last at 34.3K because its unfused recurrence fails to convert linear asymptotic work into GPU throughput. Vanilla is unsupported beyond its learned 1K position table.",
+        "groups": "The 4K prompt exposes five distinct long-sequence regimes plus one unsupported recipe.",
+        "groupItems": [
+          "Sliding-Window Attention leads at 204.9K tokens/s because every query sees at most 256 positions.",
+          "Interleaved Sliding-Window Attention, Grouped-Query Attention, and ALiBI reach 160.1K–176.0K. Only the interleaved recipe gains from local layers; the others arrive through different kernel paths.",
+          "Modern and the three expert recipes cluster at 40.2K–45.9K because global 4K attention dominates. Partial expert placements are slightly faster because they route four layers rather than eight.",
+          "Causal linear attention is last at 34.3K. Its linear asymptotic work does not compensate for the unfused serial recurrence on this GPU.",
+          "Vanilla is unsupported, not zero: its learned position table ends at 1K tokens."
+        ],
         "compromise": "Sliding-Window Attention reaches 204.9K tokens/s, but direct access is restricted to a 256-token window; it recorded 4.1555 validation loss and no exact distant retrieval. Causal linear attention is slowest here at 34.3K tokens/s, but it achieved better validation loss than Sliding-Window Attention, 4.0782 versus 4.1555, and used the smallest measured cache at 1.06 MB."
       }
     }
@@ -147,7 +192,15 @@
         "tradeoffHeading": "What this view leaves out",
         "tradeoff": "It does not show elapsed time. The full expert recipe learns most per token but trains at 31.2K tokens/s, while the fastest dense and local recipes reach about 80K.",
         "groupsHeading": "How all ten recipes group",
-        "groups": "The full expert model leads at 3.6879. Interleaved and deep Mixture of Experts form a tight second group at 3.7266 and 3.7312 because both add experts to four of eight layers; using experts in every layer gives the full model its additional edge. Modern is the strongest dense recipe at 3.8092, followed by Vanilla at 3.9392 and causal linear attention at 4.0438. ALiBI, both Sliding-Window Attention recipes, and Grouped-Query Attention occupy the 4.1009–4.1650 group. Their specialized position, locality, or head-sharing mechanisms target other resources and do not improve fixed-data prediction here.",
+        "groups": "Four quality groups cover every recipe at the shared token budget.",
+        "groupItems": [
+          "Full Mixture of Experts leads at 3.6879. Its main architectural advantage is conditional expert capacity in all eight feed-forward layers rather than four.",
+          "Interleaved and deep Mixture of Experts form a tight 3.7266–3.7312 pair. Both route four layers, so routed-layer count matters more here than alternating versus late placement.",
+          "Modern, Vanilla, and causal linear attention step down through 3.8092, 3.9392, and 4.0438. Their different operators produce distinct quality rather than a statistical tie.",
+          "ALiBI, both Sliding-Window Attention recipes, and Grouped-Query Attention occupy 4.1009–4.1650. Their position, locality, or head-sharing benefits target resources other than fixed-token loss.",
+          "The expert family leads from the first measured checkpoint and remains ordered full, interleaved, then deep. The two four-layer curves are nearly coincident.",
+          "Vanilla begins with the highest loss but improves faster than ALiBI, both local recipes, Grouped-Query Attention, and causal linear attention, crossing them before the endpoint."
+        ],
         "conclusion": "Choose this view when training data is the scarce resource. Do not use it alone when accelerator time or serving latency determines the practical cost."
       },
       "wallclock": {
@@ -159,7 +212,15 @@
         "tradeoffHeading": "Where the slower recipe wins",
         "tradeoff": "Mixture of Experts reaches the best final loss after training longer. It is a quality-first choice, not the fastest route to a good checkpoint on this single L4.",
         "groupsHeading": "How all ten recipes group",
-        "groups": "At the shared 1.73-hour budget, Modern leads at about 3.7812 and the full Mixture of Experts model follows at 3.9012: its stronger learning per token partly offsets its low throughput. Interleaved and deep Mixture of Experts are again nearly identical at 4.0812 and 4.0841 because they route the same number of layers. ALiBI, Vanilla, causal linear attention, and both Sliding-Window Attention recipes form a broad 4.09–4.13 middle group. Grouped-Query Attention is highest at 4.1650 despite completing tokens quickly; reducing work is not useful if the recipe learns less from those tokens.",
+        "groups": "Four time-budget groups explain why the token ranking changes.",
+        "groupItems": [
+          "Modern leads at about 3.7812 because it combines strong dense quality with regular optimized kernels.",
+          "Full Mixture of Experts follows at 3.9012. Better learning per token partly offsets its low throughput, but not enough to beat Modern within 1.73 hours.",
+          "Interleaved and deep Mixture of Experts sit at 4.0812 and 4.0841. ALiBI, Vanilla, causal linear attention, and both local recipes form the nearby 4.09–4.13 group.",
+          "Grouped-Query Attention is highest at 4.1650 despite processing tokens quickly. Its reduced projections save work, but this recipe learns less from each completed token.",
+          "Modern takes the early shared-time lead and keeps it through 1.73 hours. The expert curves continue far longer because their slower training produces later checkpoints.",
+          "Full Mixture of Experts eventually reaches the best endpoint after about 4.45 hours. The wall-clock graph therefore shows a real crossover between time-to-quality and final quality."
+        ],
         "conclusion": "Choose this view when elapsed accelerator time is scarce. Its ranking is implementation-specific because kernel quality, routing overhead, and hardware utilization all count."
       },
       "flops": {
@@ -171,7 +232,15 @@
         "tradeoffHeading": "What FLOPs cannot measure",
         "tradeoff": "FLOPs omit expert dispatch, synchronization, cache layout, and memory traffic. A recipe can look efficient here and still train or serve slowly on real hardware.",
         "groupsHeading": "How all ten recipes group",
-        "groups": "The FLOP ranking resembles fixed tokens because most recipes were matched near the same active-parameter scale. Full, interleaved, and deep Mixture of Experts occupy the first group at approximately 3.6960, 3.7330, and 3.7398; expert placement changes quality less than the shared conditional-capacity mechanism. Modern follows at 3.8144, Vanilla at 3.9392, and causal linear attention at 4.0459. ALiBI, the two Sliding-Window Attention recipes, and Grouped-Query Attention form the 4.0852–4.1522 group. The expert family’s advantage on this axis must still be reconciled with its much worse measured throughput.",
+        "groups": "Four compute groups cover every recipe at the shared modeled-FLOP budget.",
+        "groupItems": [
+          "Full, interleaved, and deep Mixture of Experts lead at about 3.6960, 3.7330, and 3.7398. Shared conditional capacity matters more than expert placement on this axis.",
+          "Full Mixture of Experts is best within that family because all eight layers receive expert capacity; the two four-layer placements remain close.",
+          "Modern, Vanilla, and causal linear attention follow at 3.8144, 3.9392, and 4.0459.",
+          "ALiBI, both Sliding-Window Attention recipes, and Grouped-Query Attention form the 4.0852–4.1522 group. Their other efficiency goals do not improve modeled compute-to-loss here.",
+          "The expert family leads from the earliest measured compute point and keeps the same internal order. Its advantage grows as the shared FLOP budget increases.",
+          "Vanilla starts worst but crosses the position, locality, head-sharing, and linear recipes. Its simpler stack learns slowly at first yet finishes in the middle of the field."
+        ],
         "conclusion": "Choose this view for algorithmic compute efficiency. Compare it with wall-clock before making a systems claim."
       }
     }
@@ -195,7 +264,11 @@
         <div class="tvc-option-story-grid">
           <article><h4 data-story="driver-heading"></h4><p data-story="driver"></p></article>
           <article><h4 data-story="tradeoff-heading"></h4><p data-story="tradeoff"></p></article>
-          <article><h4 data-story="groups-heading"></h4><p data-story="groups"></p></article>
+          <article class="tvc-story-groups">
+            <h4 data-story="groups-heading"></h4>
+            <p data-story="groups"></p>
+            <ul class="tvc-story-list" data-story-list="group-items"></ul>
+          </article>
         </div>
         <p class="tvc-option-story-conclusion" data-story="conclusion"></p>
       </div>
@@ -286,7 +359,17 @@
         "tradeoffHeading": "Why the quality leaders fall",
         "tradeoff": "Global RoPE recipes encounter unseen rotations. Mixture of Experts has more capacity, but still rises to 404.51; Modern reaches 410.08.",
         "groupsHeading": "How the complete field separates at 4K",
-        "groups": "ALiBI and pure Sliding-Window Attention are effectively the leading pair at 74.35 and 75.09, but for different reasons: one extrapolates a distance bias and the other keeps the prediction problem local. Interleaved Sliding-Window Attention is a distinct middle case at 96.95 because alternating global layers reintroduce long-range positional exposure. Full Mixture of Experts, Modern, Grouped-Query Attention, and both partial expert recipes form a severe-degradation cluster from 404.51 to 432.04; they share global rotary positions, so extra capacity or key/value sharing does not remove the positional shift. Causal linear attention is separate and worst at 810.10. Vanilla is unsupported, not zero, because its learned position table ends at 1K.",
+        "groups": "Five regimes explain the complete 4K tail-perplexity field.",
+        "groupItems": [
+          "ALiBI and pure Sliding-Window Attention lead at 74.35 and 75.09 for different reasons: a defined distance bias versus a fixed local prediction problem.",
+          "Interleaved Sliding-Window Attention is a middle case at 96.95. Its local layers help, while alternating global layers reintroduce unseen long-range positions.",
+          "Within the expert family, full, interleaved, and deep score 404.51, 419.86, and 432.04. Full capacity may help, but their large seed deviations overlap, so placement is not a firm explanation.",
+          "Modern and Grouped-Query Attention reach 410.08 and 412.76. Together with the expert trio, they retain global rotary positions and suffer the same out-of-range shift.",
+          "Causal linear attention is separate at 810.10. Its recurrent state is defined at 4K, but its predictions degrade most.",
+          "Vanilla is unsupported, not zero, because its learned position table ends at 1K.",
+          "Across the curve, ALiBI and pure local attention stay nearly flat from 1K to 4K. Interleaved local attention rises mildly; global rotary recipes jump sharply after 1K.",
+          "Causal linear attention rises from 64.90 at 1K to 1,094.13 at 2K, then falls to 810.10 at 4K. The partial recovery does not make it stable."
+        ],
         "conclusion": "Stable tail perplexity is not proof of distant retrieval. Sliding-Window Attention can predict local endings consistently while remaining unable to access a far-away fact directly."
       },
       "prefillTokensPerSecond": {
@@ -298,7 +381,17 @@
         "tradeoffHeading": "Why linear attention trails",
         "tradeoff": "Causal linear attention reaches only 34.3K tokens/s because its prefix recurrence is serial and unfused. Its fixed-size state still gives the smallest measured cache.",
         "groupsHeading": "How the complete field separates at 4K",
-        "groups": "Pure Sliding-Window Attention leads at 204.9K tokens/s. Interleaved Sliding-Window Attention, Grouped-Query Attention, and ALiBI form the next group at 160.1K–176.0K, although only the interleaved recipe gains from local layers; the others reach similar speed through different measured kernels and projection paths. Modern and all three expert recipes cluster much lower at 40.2K–45.9K because global long-sequence work dominates, with the partial expert placements slightly ahead of full Mixture of Experts because they route only half the layers. Causal linear attention trails at 34.3K despite linear theory, showing the cost of its serial implementation. Vanilla is unsupported beyond 1K.",
+        "groups": "Five regimes explain every 4K prefill result.",
+        "groupItems": [
+          "Pure Sliding-Window Attention leads at 204.9K tokens/s because every layer bounds each query to 256 positions.",
+          "Interleaved Sliding-Window Attention, Grouped-Query Attention, and ALiBI form the 160.1K–176.0K group. Only the interleaved recipe gains from locality; the others use different kernel paths.",
+          "Modern reaches 45.95K. Interleaved and deep Mixture of Experts are near-tied at 43.37K and 42.95K because both route four layers; their small gap is comparable to seed variation.",
+          "Full Mixture of Experts reaches 40.20K because it routes all eight layers. More conditional capacity improves loss, while dispatch at every layer costs prompt speed.",
+          "Causal linear attention trails at 34.3K. Its unfused serial recurrence prevents linear theoretical scaling from becoming high GPU throughput.",
+          "Vanilla is unsupported beyond its learned 1K position table.",
+          "Across 1K–4K, pure local attention rises then plateaus. ALiBI and Modern decline as prompts grow, while the expert and linear implementations initially gain utilization.",
+          "Interleaved local attention and Grouped-Query Attention peak at 2K, then ease at 4K. Their similar 4K rates come from different mechanisms, not identical scaling."
+        ],
         "conclusion": "Fast prefill can sacrifice access or quality. Sliding-Window Attention has no exact distant retrieval and worse loss than causal linear attention, 4.1555 versus 4.0782."
       }
     }
@@ -320,7 +413,11 @@
         <div class="tvc-option-story-grid">
           <article><h4 data-story="driver-heading"></h4><p data-story="driver"></p></article>
           <article><h4 data-story="tradeoff-heading"></h4><p data-story="tradeoff"></p></article>
-          <article><h4 data-story="groups-heading"></h4><p data-story="groups"></p></article>
+          <article class="tvc-story-groups">
+            <h4 data-story="groups-heading"></h4>
+            <p data-story="groups"></p>
+            <ul class="tvc-story-list" data-story-list="group-items"></ul>
+          </article>
         </div>
         <p class="tvc-option-story-conclusion" data-story="conclusion"></p>
       </div>
@@ -388,7 +485,15 @@
       "driver": "[[best]] at [[bestContext]] tokens has the strongest lift, [[bestMean]]. [[worst]] at [[worstContext]] tokens has the weakest, [[worstMean]].",
       "tradeoffHeading": "What these controls change",
       "groupsHeading": "How every recipe compares",
-      "groups": "Averaging the displayed context lengths gives this complete ranking: [[variantRanking]]. The numerically closest adjacent pairs are [[closestPairs]]. These are descriptive score gaps, not statistically tested ties; a cross-family pair can be close because this confidence diagnostic produced no exact retrieval successes, not because the architectures work the same way. The three expert recipes compare as [[expertRanking]]. Full Mixture of Experts routes all eight feed-forward layers; the interleaved and deep versions route four, placed alternately or only in the deeper half. [[expertLeader]] has the highest selected mean within that family, but this diagnostic cannot attribute the gap to placement: all three use global rotary positions, and none produced an exact retrieval success. The remaining recipes compare as [[nonExpertRanking]]. Modern and Grouped-Query Attention share global rotary positions; the two Sliding-Window Attention recipes share a 256-token local mechanism, although the interleaved version restores global attention in alternate layers; ALiBI uses a distance bias; causal linear attention uses a recurrent state; and Vanilla is limited by its learned position table. Similar scores inside those architecture groups suggest a shared constraint, while separation shows where the changed mechanism may matter. Neither is causal evidence without a targeted ablation.",
+      "groups": "The selected heatmap can be read through architecture families and mechanism groups, not only a best and worst cell.",
+      "groupItems": [
+        "Complete order by mean evidence lift: [[variantRanking]].",
+        "The three expert recipes compare as [[expertRanking]]. [[expertLeader]] leads this family, but all use global rotary positions and none produced exact retrieval.",
+        "Modern and Grouped-Query Attention share global rotary positions: [[denseRoPERanking]]. Head sharing is their main recipe difference, but this diagnostic alone is not a causal ablation.",
+        "The local family is [[localRanking]]. Pure local attention restricts every layer; the interleaved recipe restores global access in alternating layers.",
+        "ALiBI, causal linear attention, and Vanilla use distinct position or memory mechanisms: [[otherRanking]]. Similar scores here do not imply similar computation.",
+        "The three closest adjacent gaps are [[closestPairs]]. They are descriptive, not tested ties, and every mean uses only supported cells for this selection."
+      ],
       "unsupportedRanking": "no supported measurements",
       "unsupportedExpert": "No expert recipe",
       "conclusion": "The correct answer still reached neither rank 1 nor the top 5 in any prompt. Changing confidence is evidence of influence, not usable exact retrieval.",
@@ -397,7 +502,14 @@
         "driverHeading": "What the selected cells show",
         "driver": "[[best]] at [[bestContext]] tokens has the lowest negative log-likelihood, [[bestMean]]. [[worst]] at [[worstContext]] has the highest, [[worstMean]].",
         "groupsHeading": "How every recipe compares",
-        "groups": "Averaging the displayed context lengths gives this ranking from lower to higher negative log-likelihood: [[variantRanking]]. The numerically closest adjacent pairs are [[closestPairs]]. These are descriptive score gaps, not statistically tested ties, and close confidence can occur across unrelated architectures. The three expert recipes compare as [[expertRanking]]. Full Mixture of Experts routes all eight feed-forward layers; the interleaved and deep versions route four, placed alternately or only in the deeper half. [[expertLeader]] has the lowest selected negative log-likelihood within that family, but confidence alone cannot establish that expert placement caused the difference. The remaining recipes compare as [[nonExpertRanking]]. Their shared position and attention mechanisms explain which results are sensible to view as families, but the zero exact-success result prevents a retrieval claim.",
+        "groups": "The fallback confidence score can still be compared by architecture family.",
+        "groupItems": [
+          "Complete order from lower to higher negative log-likelihood: [[variantRanking]].",
+          "The three expert recipes compare as [[expertRanking]]. [[expertLeader]] has the best family score, but confidence does not prove expert placement caused it.",
+          "Modern and Grouped-Query Attention compare as [[denseRoPERanking]]. The local pair compares as [[localRanking]].",
+          "ALiBI, causal linear attention, and Vanilla compare as [[otherRanking]]. Their mechanisms differ even when scores are close.",
+          "The three closest adjacent gaps are [[closestPairs]]. They are descriptive similarities, not statistically tested ties."
+        ],
         "conclusion": "Confidence alone cannot show that the planted fact caused the answer. Exact top-k outcomes remain the stricter retrieval test."
       },
       "empty": {
@@ -406,6 +518,7 @@
         "driver": "Unsupported or missing measurements are not converted into zeros because that would imply evidence that was never observed.",
         "groupsHeading": "What can still be compared",
         "groups": "Choose another task, positional setting, or distance to display only combinations backed by frozen measurements.",
+        "groupItems": [],
         "conclusion": "An empty view is a data-availability result, not evidence that every recipe performed equally."
       },
       "tasks": {
@@ -471,7 +584,11 @@
           <article><h4 data-story="task-heading"></h4><p data-story="task"></p></article>
           <article><h4 data-story="driver-heading"></h4><p data-story="driver"></p></article>
           <article><h4 data-story="tradeoff-heading"></h4><p data-story="tradeoff"></p></article>
-          <article><h4 data-story="groups-heading"></h4><p data-story="groups"></p></article>
+          <article class="tvc-story-groups">
+            <h4 data-story="groups-heading"></h4>
+            <p data-story="groups"></p>
+            <ul class="tvc-story-list" data-story-list="group-items"></ul>
+          </article>
         </div>
         <p class="tvc-option-story-conclusion" data-story="conclusion"></p>
       </div>
@@ -555,6 +672,7 @@
         <div class="tvc-throughput-groups">
           <h4>How the complete field groups together</h4>
           <p id="throughput-explanation-groups"></p>
+          <ul class="tvc-story-list" id="throughput-explanation-group-list"></ul>
         </div>
         <p class="tvc-throughput-compromise" id="throughput-explanation-compromise"></p>
       </div>

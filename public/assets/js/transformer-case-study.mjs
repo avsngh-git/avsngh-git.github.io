@@ -43,6 +43,15 @@ const colors = {
   moe: "#D55E00", moe_deep: "#E69F00", moe_interleaved: "#CC79A7",
   swa: "#6A5ACD", swa_interleaved: "#8A7FDB", vanilla: "#7F8C8D",
 };
+const retrievalFamilyVariants = Object.freeze({
+  experts: ["moe", "moe_interleaved", "moe_deep"],
+  denseRoPE: ["modern", "gqa"],
+  local: ["swa", "swa_interleaved"],
+  alternativePositionOrMemory: ["alibi", "linear", "vanilla"],
+});
+const ROUTING_EQUAL_SHARE = 1 / 8;
+const ROUTING_NEAR_EQUAL_TOLERANCE = 0.005;
+const ATTENTION_LOCALITY_TOLERANCE = 0.05;
 const compact = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumFractionDigits: 2,
@@ -76,7 +85,8 @@ function storyKey(value) {
 
 const storyFields = [
   "eyebrow", "title", "graph", "taskHeading", "task", "driverHeading", "driver",
-  "tradeoffHeading", "tradeoff", "groupsHeading", "groups", "conclusion",
+  "tradeoffHeading", "tradeoff", "groupsHeading", "groups", "groupItems",
+  "conclusion",
 ];
 
 function storyView(content, overrides = {}) {
@@ -84,6 +94,14 @@ function storyView(content, overrides = {}) {
     field,
     overrides[field] ?? content?.[field] ?? "",
   ]));
+}
+
+function renderTextList(list, items, values = {}) {
+  list?.replaceChildren(...(items || []).map((item) => {
+    const entry = document.createElement("li");
+    entry.textContent = fillTemplate(item, values);
+    return entry;
+  }));
 }
 
 function updateOptionStory(panelId, story, values = {}) {
@@ -94,6 +112,10 @@ function updateOptionStory(panelId, story, values = {}) {
     element.textContent = typeof text === "string"
       ? fillTemplate(text, values)
       : "";
+  }
+  for (const list of panel.querySelectorAll("[data-story-list]")) {
+    const items = story[storyKey(list.dataset.storyList)];
+    renderTextList(list, Array.isArray(items) ? items : [], values);
   }
 }
 
@@ -626,6 +648,10 @@ function updateThroughputExplanation(summary, metric) {
   );
   setText("#throughput-explanation-laggard", explanation.laggard);
   setText("#throughput-explanation-groups", explanation.groups);
+  renderTextList(
+    panel.querySelector("#throughput-explanation-group-list"),
+    explanation.groupItems,
+  );
   setText(
     "#throughput-explanation-compromise",
     `The compromise: ${explanation.compromise}`,
@@ -808,6 +834,7 @@ function updateRetrievalStory(
       tradeoff: `${configurationContent.meaning} ${distanceContent.meaning}`,
       groupsHeading: content.empty?.groupsHeading,
       groups: content.empty?.groups,
+      groupItems: content.empty?.groupItems,
       conclusion: content.empty?.conclusion,
     }), commonValues);
     return;
@@ -822,14 +849,22 @@ function updateRetrievalStory(
     .sort((left, right) => evidenceAvailable
       ? right.mean - left.mean
       : left.mean - right.mean);
-  const expertVariants = new Set(["moe", "moe_interleaved", "moe_deep"]);
+  const expertVariants = new Set(retrievalFamilyVariants.experts);
+  const denseRoPEVariants = new Set(retrievalFamilyVariants.denseRoPE);
+  const localVariants = new Set(retrievalFamilyVariants.local);
+  const formatRanking = (variants) => {
+    const entries = ranking.filter(({ variant }) => variants.has(variant));
+    return entries.length
+      ? entries.map(({ variant, mean }) =>
+        `${names[variant] || variant} ${formatMetric(mean)}`).join("; ")
+      : content.unsupportedRanking;
+  };
+  const closestPairs = summary.closestPairs
+    .map(({ left, right, gap }) =>
+      `${names[left.variant] || left.variant} / ` +
+      `${names[right.variant] || right.variant}: ${gap.toFixed(3)}`)
+    .join("; ");
   const expertRanking = ranking.filter(({ variant }) => expertVariants.has(variant));
-  const formatRanking = (entries) => entries.length
-    ? entries
-      .map(({ variant, mean }) =>
-        `${names[variant] || variant} ${formatMetric(mean)}`)
-      .join("; ")
-    : content.unsupportedRanking;
   updateOptionStory("retrieval-story", storyView(content, {
     eyebrow: taskContent.label,
     title: content.title,
@@ -840,6 +875,7 @@ function updateRetrievalStory(
     tradeoff: `${configurationContent.meaning} ${distanceContent.meaning}`,
     groupsHeading: metricContent.groupsHeading,
     groups: metricContent.groups,
+    groupItems: metricContent.groupItems,
     conclusion: metricContent.conclusion,
   }), {
     ...commonValues,
@@ -856,20 +892,16 @@ function updateRetrievalStory(
       .map(({ variant, mean }) =>
         `${names[variant] || variant} ${formatMetric(mean)}`)
       .join("; "),
-    expertRanking: formatRanking(expertRanking),
+    expertRanking: formatRanking(expertVariants),
     expertLeader: expertRanking.length
       ? names[expertRanking[0].variant] || expertRanking[0].variant
       : content.unsupportedExpert,
-    nonExpertRanking: formatRanking(
-      ranking.filter(({ variant }) => !expertVariants.has(variant)),
+    denseRoPERanking: formatRanking(denseRoPEVariants),
+    localRanking: formatRanking(localVariants),
+    otherRanking: formatRanking(
+      new Set(retrievalFamilyVariants.alternativePositionOrMemory),
     ),
-    closestPairs: summary.closestPairs.length
-      ? summary.closestPairs
-        .map(({ left, right, gap }) =>
-          `${names[left.variant] || left.variant} and ` +
-          `${names[right.variant] || right.variant} (gap ${gap.toFixed(3)})`)
-        .join("; ")
-      : content.unsupportedRanking,
+    closestPairs: closestPairs || content.unsupportedRanking,
   });
 }
 
@@ -1064,6 +1096,10 @@ function updateRoutingStory(variant, layer, seedCount, utilization) {
   const content = readStoryContent("routing-story-content");
   const variantContent = content.variants?.[variant];
   if (!variantContent || !utilization) return;
+  const formatExperts = (experts) => experts.length
+    ? experts.map(({ expert, mean }) =>
+      `Expert ${expert} ${formatPercent(mean)}`).join("; ")
+    : "none";
   updateOptionStory("routing-story", {
     eyebrow: `${names[variant] || variant} · layer ${layer}`,
     title: variantContent.title,
@@ -1074,6 +1110,7 @@ function updateRoutingStory(variant, layer, seedCount, utilization) {
     tradeoff: variantContent.tradeoff,
     groupsHeading: content.groupsHeading,
     groups: content.groups,
+    groupItems: [...(content.groupItems || []), ...(variantContent.groupItems || [])],
     conclusion: content.conclusion,
   }, {
     variant: names[variant] || variant,
@@ -1090,6 +1127,18 @@ function updateRoutingStory(variant, layer, seedCount, utilization) {
     expertShares: utilization.experts
       .map(({ expert, mean }) => `Expert ${expert}: ${formatPercent(mean)}`)
       .join("; "),
+    aboveExperts: formatExperts(
+      utilization.experts.filter(({ mean }) =>
+        mean > ROUTING_EQUAL_SHARE + ROUTING_NEAR_EQUAL_TOLERANCE),
+    ),
+    balancedExperts: formatExperts(
+      utilization.experts.filter(({ mean }) =>
+        Math.abs(mean - ROUTING_EQUAL_SHARE) <= ROUTING_NEAR_EQUAL_TOLERANCE),
+    ),
+    belowExperts: formatExperts(
+      utilization.experts.filter(({ mean }) =>
+        mean < ROUTING_EQUAL_SHARE - ROUTING_NEAR_EQUAL_TOLERANCE),
+    ),
   });
 }
 
@@ -1217,6 +1266,20 @@ function updateAttentionStory(variant, layer, selection, heads) {
   const architecture = content.variants?.[variant];
   const summary = summarizeAttentionWeights(selection.weights);
   if (!architecture || !summary) return;
+  const headSummaries = heads.map(({ head, weights }) => ({
+    head,
+    ...summarizeAttentionWeights(weights),
+  }));
+  const orderedHeads = [...headSummaries]
+    .sort((left, right) => right.recentMass - left.recentMass);
+  const meanRecentMass = headSummaries.reduce(
+    (sum, head) => sum + head.recentMass,
+    0,
+  ) / headSummaries.length;
+  const formatHeads = (entries) => entries.length
+    ? entries.map(({ head, recentMass }) =>
+      `Head ${head} ${formatPercent(recentMass)}`).join("; ")
+    : "none";
   updateOptionStory("attention-story", storyView(content, {
     eyebrow: `${names[variant] || variant} · layer ${layer}`,
     tradeoff: architecture,
@@ -1233,6 +1296,22 @@ function updateAttentionStory(variant, layer, selection, heads) {
         return `Head ${head}: ${formatPercent(headSummary.recentMass)}`;
       })
       .join("; "),
+    mostLocalHead: String(orderedHeads[0].head),
+    mostLocalMass: formatPercent(orderedHeads[0].recentMass),
+    leastLocalHead: String(orderedHeads.at(-1).head),
+    leastLocalMass: formatPercent(orderedHeads.at(-1).recentMass),
+    highLocalityHeads: formatHeads(
+      headSummaries.filter(({ recentMass }) =>
+        recentMass > meanRecentMass + ATTENTION_LOCALITY_TOLERANCE),
+    ),
+    middleLocalityHeads: formatHeads(
+      headSummaries.filter(({ recentMass }) =>
+        Math.abs(recentMass - meanRecentMass) <= ATTENTION_LOCALITY_TOLERANCE),
+    ),
+    lowLocalityHeads: formatHeads(
+      headSummaries.filter(({ recentMass }) =>
+        recentMass < meanRecentMass - ATTENTION_LOCALITY_TOLERANCE),
+    ),
     selectionMeaning: content[selection.meaningKey],
   });
 }
@@ -1249,6 +1328,7 @@ function updateUnsupportedAttentionStory(variant, reason) {
     tradeoff: content.unsupportedTradeoff,
     groupsHeading: content.unsupportedGroupsHeading,
     groups: content.unsupportedGroups,
+    groupItems: content.unsupportedGroupItems,
     conclusion: content.unsupportedConclusion,
   }), {
     variant: names[variant] || variant,

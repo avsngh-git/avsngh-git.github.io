@@ -825,7 +825,8 @@
   background: var(--tvc-surface);
 }
 
-.tvc-option-story-grid > article:last-child:nth-child(odd) {
+.tvc-option-story-grid > article:last-child:nth-child(odd),
+.tvc-option-story-grid > .tvc-story-groups {
   grid-column: 1 / -1;
 }
 
@@ -843,6 +844,25 @@
 .tvc-option-story-grid p,
 .tvc-throughput-groups p {
   margin: 0;
+}
+
+.tvc-story-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.tvc-story-list:empty {
+  display: none;
+}
+
+.tvc-story-list li {
+  padding-left: 0.25rem;
+}
+
+.tvc-story-list li::marker {
+  color: var(--tvc-primary);
 }
 
 .tvc-throughput-groups {

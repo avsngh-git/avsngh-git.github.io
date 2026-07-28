@@ -92,8 +92,13 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#learning-story [data-story='graph']")).toContainText(
     "hours",
   );
-  await expect(page.locator("#learning-story [data-story='groups']")).toContainText(
-    "Interleaved and deep Mixture of Experts are again nearly identical",
+  const learningGroups = page.locator("#learning-story [data-story-list='group-items']");
+  await expect(learningGroups.locator("li")).toHaveCount(6);
+  await expect(learningGroups).toContainText(
+    "Interleaved and deep Mixture of Experts sit at",
+  );
+  await expect(learningGroups).toContainText(
+    "eventually reaches the best endpoint",
   );
 
   await expect(page.locator("#throughput-explanation-title")).toHaveText(
@@ -105,8 +110,10 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#throughput-explanation-compromise")).toContainText(
     "Mixture of Experts was slowest",
   );
-  await expect(page.locator("#throughput-explanation-groups")).toContainText(
-    "two partial expert recipes form another tight pair",
+  const throughputGroups = page.locator("#throughput-explanation-group-list");
+  await expect(throughputGroups.locator("li")).toHaveCount(5);
+  await expect(throughputGroups).toContainText(
+    "Interleaved and deep Mixture of Experts are nearly tied",
   );
 
   const cachedDecode = page.getByRole("button", {
@@ -126,8 +133,8 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#throughput-explanation-compromise")).toContainText(
     "Mixture of Experts decodes at 96.2 tokens/s",
   );
-  await expect(page.locator("#throughput-explanation-groups")).toContainText(
-    "identical expert-layer count produces the dominant similarity",
+  await expect(throughputGroups).toContainText(
+    "Deep and interleaved Mixture of Experts reach",
   );
 
   await page.getByRole("button", { name: "4K prompt prefill" }).click();
@@ -140,8 +147,8 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#throughput-explanation-compromise")).toContainText(
     "no exact distant retrieval",
   );
-  await expect(page.locator("#throughput-explanation-groups")).toContainText(
-    "three expert recipes cluster just below it",
+  await expect(throughputGroups).toContainText(
+    "Modern and the three expert recipes cluster",
   );
 
   await expect(page.locator("#context-story [data-story='title']")).toContainText(
@@ -154,8 +161,13 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#context-story [data-story='title']")).toContainText(
     "fastest 4K prefill",
   );
-  await expect(page.locator("#context-story [data-story='groups']")).toContainText(
-    "Modern and all three expert recipes cluster much lower",
+  const contextGroups = page.locator("#context-story [data-story-list='group-items']");
+  await expect(contextGroups.locator("li")).toHaveCount(8);
+  await expect(contextGroups).toContainText(
+    "Interleaved and deep Mixture of Experts are near-tied",
+  );
+  await expect(contextGroups).toContainText(
+    "Across 1K–4K",
   );
 
   await expect(page.locator("#retrieval-story [data-story='title']")).toContainText(
@@ -183,20 +195,18 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#retrieval-story [data-story='tradeoff']")).toContainText(
     "longest gap",
   );
-  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
-    "complete ranking",
+  const retrievalGroups = page.locator(
+    "#retrieval-story [data-story-list='group-items']",
   );
-  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
+  await expect(retrievalGroups.locator("li")).toHaveCount(6);
+  await expect(retrievalGroups).toContainText(
+    "Complete order by mean evidence lift",
+  );
+  await expect(retrievalGroups).toContainText(
     "The three expert recipes compare as",
   );
-  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
-    "The remaining recipes compare as",
-  );
-  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
-    "The numerically closest adjacent pairs are",
-  );
-  await expect(page.locator("#retrieval-story [data-story='groups']")).toContainText(
-    "gap",
+  await expect(retrievalGroups).toContainText(
+    "The three closest adjacent gaps are",
   );
 
   await page.locator("#routing-variant").selectOption("moe_deep");
@@ -216,8 +226,13 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#routing-story [data-story='driver']")).toContainText(
     "normalized entropy",
   );
-  await expect(page.locator("#routing-story [data-story='groups']")).toContainText(
+  const routingGroups = page.locator("#routing-story [data-story-list='group-items']");
+  await expect(routingGroups.locator("li")).toHaveCount(6);
+  await expect(routingGroups).toContainText(
     "Expert 0:",
+  );
+  await expect(routingGroups).toContainText(
+    "highest aligned routing agreement",
   );
 
   await page.locator("#attention-variant").selectOption("alibi");
@@ -241,7 +256,11 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#attention-story [data-story='graph']")).toContainText(
     "probability stays",
   );
-  await expect(page.locator("#attention-story [data-story='groups']")).toContainText(
+  const attentionGroups = page.locator(
+    "#attention-story [data-story-list='group-items']",
+  );
+  await expect(attentionGroups.locator("li")).toHaveCount(4);
+  await expect(attentionGroups).toContainText(
     "Head 0:",
   );
   await page.locator("#attention-variant").selectOption("linear");
@@ -252,7 +271,8 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(page.locator("#attention-story [data-story='title']")).toHaveText(
     "Causal linear has no conventional pairwise attention map",
   );
-  await expect(page.locator("#attention-story [data-story='groups']")).toContainText(
+  await expect(attentionGroups.locator("li")).toHaveCount(3);
+  await expect(attentionGroups).toContainText(
     "validation loss",
   );
 
