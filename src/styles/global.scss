@@ -184,18 +184,19 @@ h2 {
 }
 
 .about-copy {
-  max-width: 1100px;
-  min-height: 520px;
+  width: 100%;
+  max-width: 1320px;
+  min-height: 0;
   margin: 0 auto;
+  padding-block: clamp(4rem, 8vw, 7rem);
+  padding-inline: clamp(1.5rem, 4.5vw, 4rem);
 }
 
-.about-copy p {
-  max-width: 880px;
+.about-copy > p:not(.section-kicker) {
+  width: 100%;
+  max-width: none;
+  font-size: 1.1rem;
   line-height: 1.8;
-}
-
-.about-lede {
-  font-size: clamp(1.2rem, 2vw, 1.55rem);
 }
 
 .section-container {

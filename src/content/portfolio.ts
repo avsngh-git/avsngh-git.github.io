@@ -38,11 +38,7 @@ export const portfolio = {
     "Statistician and machine-learning researcher focused on robust, interpretable data solutions.",
   imageUrl: "https://github.com/avsngh-git.png",
   about:
-    "I’m Avinash Singh, an analytically driven statistician with a foundation in mathematical statistics and machine learning from Stockholm University’s Department of Mathematics. I specialize in evaluating model stability, investigating statistical assumptions, and building uncertainty-quantification frameworks for robust, interpretable data solutions.",
-  aboutDetails: [
-    "I completed my master’s thesis with the Autonomous Driving Post-Perception & Planning Research Team at TRATON / Scania Group. My work evaluated the UniAD framework under the domain shift from passenger cars to heavy-duty vehicles and applied Conformalized Quantile Regression to produce verifiable predictive uncertainty intervals for trajectory planning.",
-    "Previously, as a Data Science Intern at Alyst AB, I built an automated information-extraction and multi-threaded report-summarization pipeline using the Gmail API and Gemini Flash.",
-  ],
+    "I have completed a master’s degree in Mathematical Statistics and Machine Learning at the Department of Mathematics, Stockholm University. I completed my master’s thesis at Scania, a heavy-vehicle manufacturer and wholly owned subsidiary of the Volkswagen Group, within the Autonomous Research team—specifically, the Post-Perception and Planning team. I now continue this work as an intern with the same team at Scania.",
   links: {
     email: "mailto:avinjsingh@gmail.com",
     github: "https://github.com/avsngh-git",
