@@ -16,13 +16,13 @@
         <tr><th>Vanilla</th><td>Learned absolute</td><td>Full multi-head</td><td>LayerNorm</td><td>Dense GELU</td><td>What does the classic baseline deliver?</td></tr>
         <tr><th>Modern</th><td>RoPE</td><td>Full optimized</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>What does a current dense recipe improve?</td></tr>
         <tr><th>ALiBI</th><td>Linear distance bias</td><td>Full attention</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Does an unchanged distance rule extrapolate?</td></tr>
-        <tr><th>GQA</th><td>RoPE</td><td>8 query / 2 KV heads</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>What is gained by reducing KV state?</td></tr>
-        <tr><th>SWA</th><td>RoPE</td><td>256-token local</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>What does strict locality gain and lose?</td></tr>
-        <tr><th>SWA interleaved</th><td>RoPE</td><td>Alternating full / local</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Do occasional global layers restore access?</td></tr>
+        <tr><th>Grouped-Query Attention</th><td>RoPE</td><td>8 query / 2 KV heads</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>What is gained by reducing KV state?</td></tr>
+        <tr><th>Sliding-Window Attention</th><td>RoPE</td><td>256-token local</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>What does strict locality gain and lose?</td></tr>
+        <tr><th>Interleaved Sliding-Window Attention</th><td>RoPE</td><td>Alternating full / local</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Do occasional global layers restore access?</td></tr>
         <tr><th>Causal linear</th><td>RoPE</td><td>ELU+1 prefix state</td><td>RMSNorm</td><td>Dense SwiGLU</td><td>Does linear scaling become real speed?</td></tr>
-        <tr><th>MoE</th><td>RoPE</td><td>Full optimized</td><td>RMSNorm</td><td>Top-2 of 8 experts</td><td>Does conditional capacity improve quality?</td></tr>
-        <tr><th>MoE interleaved</th><td>RoPE</td><td>Full optimized</td><td>RMSNorm</td><td>Experts in alternating layers</td><td>How often is expert capacity needed?</td></tr>
-        <tr><th>MoE deep</th><td>RoPE</td><td>Full optimized</td><td>RMSNorm</td><td>Experts in deeper half</td><td>Where is expert capacity most useful?</td></tr>
+        <tr><th>Mixture of Experts</th><td>RoPE</td><td>Full optimized</td><td>RMSNorm</td><td>Top-2 of 8 experts</td><td>Does conditional capacity improve quality?</td></tr>
+        <tr><th>Interleaved Mixture of Experts</th><td>RoPE</td><td>Full optimized</td><td>RMSNorm</td><td>Experts in alternating layers</td><td>How often is expert capacity needed?</td></tr>
+        <tr><th>Deep Mixture of Experts</th><td>RoPE</td><td>Full optimized</td><td>RMSNorm</td><td>Experts in deeper half</td><td>Where is expert capacity most useful?</td></tr>
       </tbody>
     </table>
   </div>

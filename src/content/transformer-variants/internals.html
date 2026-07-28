@@ -23,7 +23,7 @@
     <p class="tvc-section-kicker">Sparse expert behavior</p>
     <h2>Did the active-parameter-matched router use its stored capacity?</h2>
     <p>
-      A top-two MoE can store many experts and still collapse onto a small subset.
+      A top-two Mixture of Experts model can store many experts and still collapse onto a small subset.
       The utilization view measures each expert's share of selected routes by layer
       across five seeds. Router entropy supplies a second balance check. The stability
       view then asks whether independently trained seeds learn comparable routing
@@ -33,10 +33,10 @@
   </div>
   <div class="tvc-interactive-prompt">
     <span class="tvc-prompt-icon" aria-hidden="true">✦</span>
-    <div><strong>Interactive routing probe</strong><p>Select an MoE placement and layer. Bars show mean expert use with seed-level variation.</p></div>
+    <div><strong>Interactive routing probe</strong><p>Select a Mixture of Experts placement and layer. Bars show mean expert use with seed-level variation.</p></div>
   </div>
   <div class="tvc-control-panel tvc-attention-controls">
-    <label>Choose MoE recipe <select id="routing-variant"></select></label>
+    <label>Choose Mixture of Experts recipe <select id="routing-variant"></select></label>
     <label>Choose expert layer <select id="routing-layer"></select></label>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="routing-utilization-figure">
@@ -45,7 +45,7 @@
       id="routing-utilization-chart"
       class="tvc-plotly-chart"
       role="img"
-      aria-label="Interactive expert utilization for the selected MoE recipe and layer"
+      aria-label="Interactive expert utilization for the selected Mixture of Experts recipe and layer"
     ><p class="tvc-loading">Loading expert utilization…</p></div>
     <figcaption class="figure-interpretation">
       <h3>How to interpret balanced expert use</h3>
@@ -57,8 +57,8 @@
         is not distorted by overflow.
       </p>
       <p>
-        The observed normalized router entropy is 0.9986 for full MoE, 0.9984 for
-        interleaved MoE, and 0.9979 for deep MoE, where 1.0 is the maximum possible
+        The observed normalized router entropy is 0.9986 for the full Mixture of Experts recipe, 0.9984 for
+        the interleaved recipe, and 0.9979 for the deep recipe, where 1.0 is the maximum possible
         entropy for eight experts. The routers therefore used their expert pools
         broadly; the quality gain is not explained by a trivial collapse onto one or
         two experts. Balanced routing is still a health signal, not a causal
@@ -72,7 +72,7 @@
       id="routing-stability-chart"
       class="tvc-plotly-chart"
       role="img"
-      aria-label="Interactive cross-seed expert-routing agreement by MoE layer"
+      aria-label="Interactive cross-seed expert-routing agreement by Mixture of Experts layer"
     ><p class="tvc-loading">Loading aligned cross-seed routing stability…</p></div>
     <figcaption class="figure-interpretation">
       <h3>Why expert labels must be aligned before seeds are compared</h3>
@@ -84,8 +84,8 @@
         labels.
       </p>
       <p>
-        Mean held-out agreement is 0.431 for deep MoE, 0.366 for interleaved MoE,
-        and 0.363 for full MoE. Chance after balancing eight labels would be near
+        Mean held-out agreement is 0.431 for the deep Mixture of Experts recipe, 0.366 for the interleaved recipe,
+        and 0.363 for the full recipe. Chance after balancing eight labels would be near
         0.125, so the routers learn some repeatable token partitioning; they are far
         from converging on one seed-invariant taxonomy. Deep-only expert placement is
         the most stable of the three, consistent with later layers receiving more
@@ -117,9 +117,10 @@
       <h3>What the depth profiles show</h3>
       <p>
         Across five seeds, ALiBI has the highest mean stable rank (15.25). Modern
-        (12.18), pure SWA (11.62), SWA interleaved (11.29), and MoE deep (11.28)
+        (12.18), pure Sliding-Window Attention (11.62), its interleaved version
+        (11.29), and the deep Mixture of Experts recipe (11.28)
         form the next group, while causal linear attention has the lowest mean
-        (4.74). The ranking is not a disguised quality ranking: full MoE reaches
+        (4.74). The ranking is not a disguised quality ranking: the full Mixture of Experts recipe reaches
         the best held-out loss even though its mean stable rank is only 9.48,
         whereas ALiBI spreads activation energy across more directions but predicts
         held-out tokens less accurately.
@@ -162,7 +163,7 @@
       <h3>The important signal is the location of a drop, not a universal target value</h3>
       <p>
         Most five-seed mean adjacent-layer values lie between roughly 0.70 and 0.95,
-        so the residual stream is generally transformed incrementally. MoE deep's
+        so the residual stream is generally transformed incrementally. The deep Mixture of Experts recipe's
         largest transition is 0.697 at pair three—the boundary between its dense
         first half and expert-equipped second half. The location agrees with the
         intended placement mechanism, but the new five-seed estimate is materially
@@ -191,7 +192,7 @@
       Memory-efficient kernels usually avoid retaining the full probability matrix.
       The exporter reconstructs exact pre-dropout softmax probabilities for selected
       checkpoints from the normalized layer input, applying the same RoPE rotations,
-      ALiBI slopes, GQA head sharing, causal masks, and configured windows as the model.
+      ALiBI slopes, Grouped-Query Attention head sharing, causal masks, and configured windows as the model.
       Each heatmap row is a query and each column is a possible key.
     </p>
   </div>
@@ -203,10 +204,10 @@
     <label>Choose recipe
       <select id="attention-variant">
         <option value="modern">Modern</option><option value="vanilla">Vanilla</option>
-        <option value="alibi">ALiBI</option><option value="gqa">GQA</option>
-        <option value="swa">SWA</option><option value="swa_interleaved">SWA interleaved</option>
-        <option value="moe">MoE</option><option value="moe_interleaved">MoE interleaved</option>
-        <option value="moe_deep">MoE deep</option><option value="linear">Causal linear — no pairwise map</option>
+        <option value="alibi">ALiBI</option><option value="gqa">Grouped-Query Attention</option>
+        <option value="swa">Sliding-Window Attention</option><option value="swa_interleaved">Interleaved Sliding-Window Attention</option>
+        <option value="moe">Mixture of Experts</option><option value="moe_interleaved">Interleaved Mixture of Experts</option>
+        <option value="moe_deep">Deep Mixture of Experts</option><option value="linear">Causal linear — no pairwise map</option>
       </select>
     </label>
     <label>Choose layer <select id="attention-layer"></select></label>
@@ -227,14 +228,15 @@
         Every softmax map must have an empty upper triangle: non-zero probability above
         that boundary would reveal future-token leakage. ALiBI is expected to place
         stronger probability near the diagonal, especially in steep-slope heads,
-        because distance is subtracted directly from logits. GQA can still show
+        because distance is subtracted directly from logits. Grouped-Query Attention can still show
         head-specific patterns because query heads differ, even though groups share
         keys and values; the heatmap alone cannot display the memory saving.
       </p>
       <p>
-        Modern and the three MoE recipes use the same attention operator. Differences
+        Modern and the three Mixture of Experts recipes use the same attention operator. Differences
         among their maps reflect different learned representations, not a different
-        attention topology. The exported sample is 64 tokens—shorter than SWA's
+        attention topology. The exported sample is 64 tokens—shorter than the
+        Sliding-Window Attention model's
         256-token window—so it cannot visibly demonstrate the window boundary; the
         architecture configuration and 4K throughput measurement provide that evidence.
         Causal linear attention is explicitly unsupported because prefix statistics do
@@ -257,7 +259,7 @@
   </div>
   <div class="tvc-decision-list">
     <article><span>01</span><div><h3>Registry-driven construction</h3><p><strong>Problem.</strong> Scattered variant conditionals make it difficult to tell which components changed.</p><p><strong>Choice.</strong> Each registered recipe declares its model class, position method, attention class, normalization, FFN, overrides, and optional per-layer pattern behind one build interface.</p><p><strong>Consequence.</strong> The complete architecture matrix can be generated from explicit construction knowledge; a new recipe must declare its deviations instead of inheriting hidden trainer branches.</p></div></article>
-    <article><span>02</span><div><h3>Protocol-level attention interface</h3><p><strong>Problem.</strong> Full attention, GQA, SWA, ALiBI, and linear recurrence expose different cache and visualization semantics.</p><p><strong>Choice.</strong> Callers pass cache state opaquely and evaluators ask capabilities rather than assuming every operator materializes the same tensors.</p><p><strong>Consequence.</strong> Unsupported cache and attention-map states remain visible, preventing a convenient but scientifically false common denominator.</p></div></article>
+    <article><span>02</span><div><h3>Protocol-level attention interface</h3><p><strong>Problem.</strong> Full attention, Grouped-Query Attention, Sliding-Window Attention, ALiBI, and linear recurrence expose different cache and visualization semantics.</p><p><strong>Choice.</strong> Callers pass cache state opaquely and evaluators ask capabilities rather than assuming every operator materializes the same tensors.</p><p><strong>Consequence.</strong> Unsupported cache and attention-map states remain visible, preventing a convenient but scientifically false common denominator.</p></div></article>
     <article><span>03</span><div><h3>Verified asynchronous checkpoints</h3><p><strong>Problem.</strong> GPU failures and partial writes can destroy progress or silently alter the run after recovery.</p><p><strong>Choice.</strong> CPU snapshots, atomic replacement, SHA-256 verification, ring rotation, health monitoring, and restoration of model, optimizer, RNG, scheduler, and loader cursor.</p><p><strong>Consequence.</strong> Recovery preserves the identity of a seed and its exact consumed-token trajectory, not only a set of model weights.</p></div></article>
     <article><span>04</span><div><h3>Frontend-agnostic evidence</h3><p><strong>Problem.</strong> A server-bound dashboard is fragile and difficult to preserve as a portfolio artifact.</p><p><strong>Choice.</strong> Evaluators emit strict JSON and standalone interactive Plotly assets; this React site freezes a versioned snapshot and renders the same evidence with local, responsive controls.</p><p><strong>Consequence.</strong> The page can be rebuilt without a Python server or chart CDN, while every displayed number remains traceable to the experiment commit.</p></div></article>
   </div>
@@ -269,10 +271,10 @@
     <h2>What this evidence does not establish</h2>
   </div>
   <div class="tvc-limit-list">
-    <article><h3>Active parity is not stored-parameter parity</h3><p>Full MoE activates 51.46M parameters per token versus Modern's 51.43M, but stores 103.37M because six experts are inactive for each token. The study fairly compares active computation while reporting the extra checkpoint and memory capacity explicitly.</p></article>
+    <article><h3>Active parity is not stored-parameter parity</h3><p>The full Mixture of Experts recipe activates 51.46M parameters per token versus Modern's 51.43M, but stores 103.37M because six experts are inactive for each token. The study fairly compares active computation while reporting the extra checkpoint and memory capacity explicitly.</p></article>
     <article><h3>Five seeds improve—not eliminate—uncertainty</h3><p>Checkpoint seeds are the correct replication unit and five observations reduce standard error relative to the historical three-seed study. They still do not establish how rankings transfer to new corpora, parameter scales, or hardware.</p></article>
     <article><h3>Long context is extrapolation, not long-context training</h3><p>Every recipe trains at 1,024 tokens and is tested up to 4,096. The result measures behavior outside the training range and should not be generalized to models trained natively at 4K.</p></article>
-    <article><h3>SWA's stability is local</h3><p>A 4K container does not imply a 4K receptive field. Each SWA query sees at most 256 tokens per layer, so flat perplexity cannot demonstrate retrieval from the distant prefix.</p></article>
+    <article><h3>Sliding-Window Attention stability is local</h3><p>A 4K container does not imply a 4K receptive field. Each query sees at most 256 tokens per layer, so flat perplexity cannot demonstrate retrieval from the distant prefix.</p></article>
     <article><h3>Throughput is hardware- and implementation-specific</h3><p>Measurements come from an NVIDIA L4-24Q and these kernels, tensor shapes, cache paths, and batch sizes. The relative order can change with fused kernels or different accelerators.</p></article>
     <article><h3>Internal probes are diagnostic</h3><p>Stable rank, CKA, and heatmaps reveal structure but do not identify a causal reason for downstream quality without targeted interventions and task-level probes.</p></article>
   </div>

@@ -7,7 +7,7 @@
     intended intervention and the rest of the pipeline as controlled infrastructure.
     That does not make every pair a perfect ablation—Vanilla and Modern deliberately
     differ in several components—but it makes those bundled changes visible and keeps
-    accidental variation out of the result. The MoE expert width was reduced so its
+    accidental variation out of the result. For the Mixture of Experts recipe, expert width was reduced so its
     top-two active FFN parameters match the dense SwiGLU FFN within 0.1%.
   </p>
   <p>
@@ -87,15 +87,15 @@
   </math>
   <div class="tvc-reading-width">
     <p>
-      MoE recipes add two router regularizers. The load-balancing term discourages a
+      Mixture of Experts recipes add two router regularizers. The load-balancing term discourages a
       small subset of experts from receiving nearly every token; the router z-loss
       controls the scale of routing logits. These terms improve routing stability, but
-      they also mean MoE's optimized objective is not numerically identical to the
+      they also mean the expert model's optimized objective is not numerically identical to the
       dense objective. Reported validation loss remains the comparable next-token
       cross-entropy component.
     </p>
   </div>
-  <math class="tvc-equation" display="block" aria-label="MoE loss equals cross entropy plus weighted load balancing and router z-loss terms">
+  <math class="tvc-equation" display="block" aria-label="Mixture of Experts loss equals cross entropy plus weighted load balancing and router z-loss terms">
     <mrow><msub><mi>L</mi><mtext>MoE</mtext></msub><mo>=</mo><msub><mi>L</mi><mtext>CE</mtext></msub><mo>+</mo><mi>α</mi><mi>E</mi><munderover><mo>∑</mo><mrow><mi>e</mi><mo>=</mo><mn>1</mn></mrow><mi>E</mi></munderover><msub><mi>f</mi><mi>e</mi></msub><msub><mi>P</mi><mi>e</mi></msub><mo>+</mo><mi>β</mi><mi>mean</mi><mo>(</mo><msup><mrow><mi>logsumexp</mi><mo>(</mo><mi>r</mi><mo>)</mo></mrow><mn>2</mn></msup><mo>)</mo></mrow>
   </math>
   <div class="tvc-table-scroll tvc-recipe-wrap">
@@ -107,7 +107,7 @@
       <tr><th>Precision</th><td>bfloat16 autocast; sensitive reductions remain float32 where required</td></tr>
       <tr><th>Stability</th><td>Global gradient norm clipped at 1.0; non-finite updates abort before optimizer mutation</td></tr>
       <tr><th>Budget</th><td>7,629 optimizer steps = 499,974,144 tokens per run</td></tr>
-      <tr><th>MoE terms</th><td>Load balance α = 0.01; router z-loss β = 0.001</td></tr>
+      <tr><th>Expert-routing terms</th><td>Load balance α = 0.01; router z-loss β = 0.001</td></tr>
     </tbody></table>
   </div>
 </section>

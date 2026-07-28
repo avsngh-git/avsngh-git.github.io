@@ -56,12 +56,12 @@ const variants: Variant[] = [
   },
   {
     id: "gqa",
-    name: "GQA",
+    name: "Grouped-Query Attention",
     role: "KV-memory experiment",
     changes:
-      "Grouped-query attention (GQA) lets eight query heads share two key and value head pairs. Queries remain specialized while stored KV state is reduced.",
+      "Grouped-Query Attention lets eight query heads share two key and value head pairs. Queries remain specialized while stored KV state is reduced.",
     motivation:
-      "Grouped-query attention tests whether a smaller key-value cache can reduce parameters and memory traffic without giving up too much prediction quality.",
+      "Grouped-Query Attention tests whether a smaller key-value cache can reduce parameters and memory traffic without giving up too much prediction quality.",
     tradeoff:
       "Sharing key and value heads lowers cache size, but it also removes head-specific capacity and does not guarantee lower latency at every batch shape.",
     result:
@@ -70,10 +70,10 @@ const variants: Variant[] = [
   },
   {
     id: "swa",
-    name: "SWA",
+    name: "Sliding-Window Attention",
     role: "Local-attention experiment",
     changes:
-      "Sliding-window attention (SWA) lets each token attend only to itself and the previous 255 tokens instead of the full earlier sequence.",
+      "Sliding-Window Attention lets each token attend only to itself and the previous 255 tokens instead of the full earlier sequence.",
     motivation:
       "The experiment asks how much speed and length stability a fixed local view can provide, and what is lost when distant tokens cannot be addressed directly.",
     tradeoff:
@@ -84,7 +84,7 @@ const variants: Variant[] = [
   },
   {
     id: "swa-interleaved",
-    name: "SWA interleaved",
+    name: "Interleaved Sliding-Window Attention",
     role: "Hybrid-attention experiment",
     changes:
       "Even layers use full attention and odd layers use a 256-token sliding window, alternating global and local token interaction.",
@@ -93,7 +93,7 @@ const variants: Variant[] = [
     tradeoff:
       "Global layers add cost and may disrupt the local stability benefit. Their presence also does not prove that the trained model uses distant information.",
     result:
-      "It did not improve fixed-data loss over pure SWA and exact retrieval remained zero. Its 4K tail perplexity rose to 96.95.",
+      "It did not improve fixed-data loss over pure Sliding-Window Attention and exact retrieval remained zero. Its 4K tail perplexity rose to 96.95.",
     tags: ["RoPE", "Global + local", "Hybrid"],
   },
   {
@@ -112,12 +112,12 @@ const variants: Variant[] = [
   },
   {
     id: "moe",
-    name: "MoE",
+    name: "Mixture of Experts",
     role: "Conditional-capacity experiment",
     changes:
-      "In this mixture of experts (MoE), each dense feed-forward block becomes eight experts. A learned router selects two for each token.",
+      "In this Mixture of Experts model, each dense feed-forward block becomes eight experts. A learned router selects two for each token.",
     motivation:
-      "Mixture of experts tests whether more stored, conditional capacity improves prediction when active parameters per token remain close to the dense baseline.",
+      "Mixture of Experts tests whether more stored, conditional capacity improves prediction when active parameters per token remain close to the dense baseline.",
     tradeoff:
       "Routing expands stored capacity, but expert dispatch adds memory, synchronization, imbalance risk, and slower training.",
     result:
@@ -126,21 +126,21 @@ const variants: Variant[] = [
   },
   {
     id: "moe-interleaved",
-    name: "MoE interleaved",
+    name: "Interleaved Mixture of Experts",
     role: "Expert-placement experiment",
     changes:
       "Expert feed-forward blocks appear in alternating layers, while the remaining layers keep the dense Modern feed-forward network.",
     motivation:
-      "This placement asks whether part-time conditional capacity can preserve much of MoE's quality benefit with fewer expert layers.",
+      "This placement asks whether part-time conditional capacity can preserve much of the Mixture of Experts quality benefit with fewer expert layers.",
     tradeoff:
       "It reduces stored experts and routing frequency, but may limit where specialization can develop across model depth.",
     result:
       "It reached 3.7252 validation loss and 36.7K training tokens/s. Its 4K tail perplexity rose to 419.86.",
-    tags: ["Alternating experts", "Top-2 routing", "Partial MoE"],
+    tags: ["Alternating experts", "Top-2 routing", "Partial expert model"],
   },
   {
     id: "moe-deep",
-    name: "MoE deep",
+    name: "Deep Mixture of Experts",
     role: "Expert-placement experiment",
     changes:
       "The first half of the network stays dense and expert feed-forward blocks replace the deeper half.",
@@ -150,7 +150,7 @@ const variants: Variant[] = [
       "Late specialization may concentrate useful capacity, but it delays routing and cannot provide expert computation in shallow layers.",
     result:
       "It reached 3.7311 validation loss and 36.5K training tokens/s. Its 4K tail perplexity rose to 432.04.",
-    tags: ["Deep-layer experts", "Top-2 routing", "Partial MoE"],
+    tags: ["Deep-layer experts", "Top-2 routing", "Partial expert model"],
   },
 ];
 
@@ -189,7 +189,7 @@ export function VariantExplorer() {
           <article>
             <span>03</span>
             <h3>Per-token capacity</h3>
-            <p>Dense networks reuse one path. MoE routes tokens through selected expert paths.</p>
+            <p>Dense networks reuse one path. Mixture of Experts models route tokens through selected expert paths.</p>
           </article>
         </div>
       </section>

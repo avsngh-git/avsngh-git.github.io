@@ -117,8 +117,16 @@
       <dd>The per-token computation that transforms information after attention. It is sometimes shortened to FFN.</dd>
     </div>
     <div>
-      <dt>Mixture of experts</dt>
-      <dd>A larger set of feed-forward networks where a router selects only a few experts for each token. It is shortened to MoE.</dd>
+      <dt>Mixture of Experts (MoE)</dt>
+      <dd>A larger set of feed-forward networks where a router selects only a few experts for each token. The abbreviation is used only in compact labels and equations.</dd>
+    </div>
+    <div>
+      <dt>Grouped-Query Attention (GQA)</dt>
+      <dd>An attention design where several query heads share fewer key and value heads, reducing the saved KV state.</dd>
+    </div>
+    <div>
+      <dt>Sliding-Window Attention (SWA)</dt>
+      <dd>A local attention design where each token can use only a fixed number of nearby earlier tokens.</dd>
     </div>
   </dl>
 </section>
