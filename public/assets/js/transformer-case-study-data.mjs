@@ -27,6 +27,22 @@ export function metricSeries(summary, metric) {
     .map((variant) => ({ variant: variant.variant, value: variant[metric] }));
 }
 
+/** @param {unknown} summary @param {NumericMetricKey} metric */
+export function throughputExtremes(summary, metric) {
+  const ranked = metricSeries(summary, metric).sort((a, b) => b.value - a.value);
+  if (!ranked.length) {
+    throw new RangeError(`No measured values for throughput metric: ${metric}`);
+  }
+  const leader = ranked[0];
+  const laggard = ranked.at(-1);
+  return {
+    leader,
+    laggard,
+    ratio: leader.value / laggard.value,
+    measuredCount: ranked.length,
+  };
+}
+
 /** @param {unknown} summary @param {ContextMetricKey} metric */
 export function contextSeries(summary, metric) {
   const metricValues = summary?.contextMetrics?.[metric];

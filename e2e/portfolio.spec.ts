@@ -84,6 +84,16 @@ test("case-study controls update every interactive evidence view", async ({
     page.locator("#learning-curves-chart-accessible-data-summary"),
   ).toContainText("Elapsed training seconds");
 
+  await expect(page.locator("#throughput-explanation-title")).toHaveText(
+    "Grouped-Query Attention led; Mixture of Experts trailed",
+  );
+  await expect(page.locator("#throughput-explanation-graph")).toContainText(
+    "forward pass, backward pass, and optimizer update",
+  );
+  await expect(page.locator("#throughput-explanation-compromise")).toContainText(
+    "Mixture of Experts was slowest",
+  );
+
   const cachedDecode = page.getByRole("button", {
     name: /KV-cached decode/,
   });
@@ -92,6 +102,26 @@ test("case-study controls update every interactive evidence view", async ({
   await expect(
     page.locator("#throughput-chart-accessible-data-summary"),
   ).toContainText("cachedDecodeTokensPerSecond");
+  await expect(page.locator("#throughput-explanation-title")).toHaveText(
+    "Vanilla led; Mixture of Experts trailed",
+  );
+  await expect(page.locator("#throughput-explanation-graph")).toContainText(
+    "prompt prefill happens before the timer",
+  );
+  await expect(page.locator("#throughput-explanation-compromise")).toContainText(
+    "Mixture of Experts decodes at 96.2 tokens/s",
+  );
+
+  await page.getByRole("button", { name: "4K prompt prefill" }).click();
+  await expect(page.locator("#throughput-explanation-title")).toHaveText(
+    "Sliding-Window Attention led; Causal linear trailed",
+  );
+  await expect(page.locator("#throughput-explanation-graph")).toContainText(
+    "Vanilla is absent—not zero",
+  );
+  await expect(page.locator("#throughput-explanation-compromise")).toContainText(
+    "no exact distant retrieval",
+  );
 
   await page.locator("#context-metric").selectOption("prefillTokensPerSecond");
   await expect(page.locator("#context-chart-accessible-data-summary")).toContainText(

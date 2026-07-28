@@ -46,6 +46,45 @@
       </p>
     </figcaption>
   </figure>
+  <script type="application/json" id="throughput-explanation-content">
+    {
+      "trainingTokensPerSecond": {
+        "workload": "Training throughput",
+        "graph": "The bars rank [[measuredCount]] recipes by end-to-end training tokens per second, including the forward pass, backward pass, and optimizer update. [[leader]] has the highest mean at [[leaderRate]], [[ratio]]× the [[laggardRate]] measured for [[laggard]]. Error bars show variation across five training seeds.",
+        "leader": "Grouped-Query Attention uses only two key-value heads for eight query heads, which reduces projection work and active parameters while preserving a regular dense execution path. Its 80.2K tokens/s mean is effectively tied with Sliding-Window Attention at 80.2K once seed variation is considered.",
+        "laggard": "The full Mixture of Experts recipe routes every token to two of eight feed-forward experts. Dispatch, gathering, synchronization, and less regular memory access make that conditional path harder to utilize efficiently on this GPU.",
+        "compromise": "Speed is not quality here. Grouped-Query Attention recorded the weakest final validation loss, 4.1807, although it used the fewest active parameters at 48.28M. Mixture of Experts was slowest at 31.2K tokens/s but achieved the best loss, 3.6862, by storing roughly twice as many parameters and activating only selected experts for each token."
+      },
+      "cachedGenerationTokensPerSecond": {
+        "workload": "End-to-end generation with a key-value cache",
+        "graph": "The bars rank [[measuredCount]] recipes while generating 128 tokens after a 64-token prompt. Prompt prefill is included, and later tokens reuse the key-value cache. [[leader]] leads at [[leaderRate]], [[ratio]]× [[laggard]] at [[laggardRate]].",
+        "leader": "Vanilla follows a simple, mature dense path: learned position lookups, full attention, and a GELU feed-forward network. With no rotary-position transforms, expert dispatch, or recurrent prefix update, this small batch-one workload maps cleanly onto the available kernels.",
+        "laggard": "Mixture of Experts still performs top-two routing at every feed-forward block. At batch size one, there are too few tokens to amortize dispatch and expert-kernel overhead, so its additional conditional capacity becomes a latency cost.",
+        "compromise": "Vanilla’s 512.8 tokens/s serving lead comes with 3.9400 validation loss and a learned position table that cannot be evaluated beyond its 1K training length. Mixture of Experts serves much more slowly at 95.5 tokens/s, but its 3.6862 loss is the best measured quality. The right choice depends on whether single-request latency or prediction quality is the binding constraint."
+      },
+      "cachedDecodeTokensPerSecond": {
+        "workload": "Steady-state key-value-cached decode",
+        "graph": "The bars isolate the token-by-token decode loop for [[measuredCount]] recipes: prompt prefill happens before the timer, and each new token reuses cached keys and values. [[leader]] reaches [[leaderRate]], [[ratio]]× [[laggard]] at [[laggardRate]].",
+        "leader": "Vanilla again benefits from a compact, regular dense path. Decode at batch size one is dominated by small sequential operations and memory movement, so its straightforward attention and feed-forward kernels have less overhead per token.",
+        "laggard": "Mixture of Experts must run the router and launch selected expert computation for every individual decoded token. Sparse arithmetic does not imply low latency when the workload is too small to fill the expert kernels.",
+        "compromise": "Vanilla is the latency winner at 526.0 tokens/s, but not the quality or long-context winner. Mixture of Experts decodes at 96.2 tokens/s—poor for this metric—while delivering the lowest validation loss. Grouped-Query Attention reduces key-value projections and active parameters, yet at batch one that architectural saving does not translate into the fastest decode."
+      },
+      "uncachedGenerationTokensPerSecond": {
+        "workload": "Generation without a key-value cache",
+        "graph": "The bars rank [[measuredCount]] recipes when the complete growing prefix is recomputed for every generated token. This deliberately expensive baseline shows the cost avoided by caching. [[leader]] reaches [[leaderRate]], [[ratio]]× [[laggard]] at [[laggardRate]].",
+        "leader": "ALiBI stays on a regular dense-attention path and adds a comparatively cheap distance bias instead of rotary transforms or expert dispatch. Recomputing the whole prefix repeatedly favored that implementation. The benchmark does not isolate the contribution of any single kernel, so this is an implementation-level result.",
+        "laggard": "Without a cache, Mixture of Experts repeatedly recomputes attention and routes the entire growing prefix through selected experts. That magnifies the same dispatch and memory-traffic costs visible in the cached measurements.",
+        "compromise": "ALiBI leads speed at 355.5 tokens/s and also has the best 4K tail perplexity, 74.35, but its in-range validation loss is weaker at 4.1172. Mixture of Experts falls to 41.5 tokens/s yet retains the best validation loss. In normal generation a working key-value cache should be preferred; this view mainly reveals how architecture overhead compounds when earlier tokens are recomputed."
+      },
+      "prefillTokensPerSecond4k": {
+        "workload": "4K prompt prefill",
+        "graph": "The bars rank [[measuredCount]] supported recipes while processing a 4,096-token prompt in one pass. [[leader]] leads at [[leaderRate]], [[ratio]]× [[laggard]] at [[laggardRate]]. Vanilla is absent—not zero—because its learned position table ends at 1K tokens.",
+        "leader": "Sliding-Window Attention lets each token attend to at most the previous 255 tokens rather than the full 4K prefix. That bounded local workload substantially reduces long-prompt attention work and produced the strongest realized prefill rate.",
+        "laggard": "Causal linear attention has attractive linear asymptotic scaling, but this implementation updates prefix statistics through a serial, unfused recurrence. On the L4, poor parallel utilization outweighed the reduction in theoretical work.",
+        "compromise": "Sliding-Window Attention reaches 204.9K tokens/s, but direct access is restricted to a 256-token window; it recorded 4.1555 validation loss and no exact distant retrieval. Causal linear attention is slowest here at 34.3K tokens/s, but it achieved better validation loss than Sliding-Window Attention, 4.0782 versus 4.1555, and used the smallest measured cache at 1.06 MB."
+      }
+    }
+  </script>
 </section>
 
 <section class="tvc-section">
@@ -293,15 +332,24 @@
     <p class="tvc-section-kicker">Serving behavior</p>
     <h2>Which recipes were fastest for training, prompts, and generation?</h2>
     <p>
-      A <strong>key-value cache (KV cache)</strong> saves attention information from
-      earlier tokens so it does not need to be recomputed after every generated token.
-      <strong>Prefill</strong> processes the input prompt; <strong>decode</strong>
-      generates later tokens one at a time, usually by reusing that cache.
+      When a model answers a prompt, it does two jobs. First, it reads the entire
+      prompt; this is called <strong>prefill</strong>. It then produces the answer one
+      token at a time; this is called <strong>decode</strong>.
     </p>
     <p>
-      Training adds backward passes and optimizer work. These workloads exercise
-      different kernels and memory paths, so one throughput number cannot describe
-      all of them.
+      During decode, the model needs information from earlier tokens. A
+      <strong>key-value cache (KV cache)</strong> keeps the key and value data already
+      created for those tokens, so the model does not create that data again for every
+      new token.
+    </p>
+    <p>
+      Training is different. The model makes predictions, checks its mistakes, and
+      updates what it has learned.
+    </p>
+    <p>
+      Reading a prompt, generating an answer, and training are different kinds of work.
+      A recipe may be fast at one and slow at another, so the buttons compare them
+      separately.
     </p>
   </div>
   <div class="tvc-interactive-prompt">
@@ -324,34 +372,49 @@
       aria-live="polite"
     ><p class="tvc-loading">Loading frozen throughput measurements…</p></div>
     <noscript><p>The cache-aware serving matrix requires JavaScript; raw timings and unsupported states remain available in the linked project repository.</p></noscript>
-    <figcaption class="figure-interpretation">
-      <h3>What realized speed adds to complexity analysis</h3>
-      <p>
-        Vanilla leads KV-cached short generation at <strong>512.8 tokens/s</strong>,
-        followed by ALiBI at 364.4 and Modern at 336.2. Pure Sliding-Window Attention
-        leads 4K prefill at <strong>204.9K tokens/s</strong>; its interleaved version,
-        Grouped-Query Attention, and ALiBI follow at
-        176.0K, 168.9K, and 160.1K. Every recipe produced a reusable cache in this
-        implementation. The full Mixture of Experts recipe and causal linear attention remain slow for
-        different reasons: irregular expert dispatch in one case, serial unfused
-        prefix recurrence in the other.
-      </p>
-      <p>
-        The conclusion is scoped to an NVIDIA L4-24Q, these tensor shapes, and these
-        implementations. It does not invalidate theoretical scaling. It demonstrates
-        that FLOPs, kernel maturity, synchronization, cache layout, memory traffic, and
-        occupancy must all be measured before an efficiency claim becomes operational.
-      </p>
-      <p>
-        Training bars aggregate five independent runs and display sample-standard-
-        deviation error bars. The displayed generation and decode bars use the
-        declared seed-42 checkpoint at a 64-token prompt and batch size one, with
-        10 warm-ups and 30 measured repetitions; they quantify timing variation, not
-        checkpoint-seed variation. Sample coefficients of variation were roughly
-        1–5%, while the 4K prefill value is aggregated across all five final
-        checkpoints. These rankings are therefore precise for this narrow L4 workload,
-        not universal deployment rankings.
-      </p>
+    <figcaption>
+      <div
+        class="tvc-throughput-explanation"
+        id="throughput-explanation"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <p class="tvc-throughput-eyebrow" id="throughput-explanation-workload">
+          Training throughput
+        </p>
+        <h3 id="throughput-explanation-title">
+          Loading the measured leader and trade-off…
+        </h3>
+        <p id="throughput-explanation-graph"></p>
+        <div class="tvc-throughput-explanation-grid">
+          <article>
+            <h4 id="throughput-explanation-leader-heading">Why the leader is fast</h4>
+            <p id="throughput-explanation-leader"></p>
+          </article>
+          <article>
+            <h4 id="throughput-explanation-laggard-heading">Why the laggard is slow</h4>
+            <p id="throughput-explanation-laggard"></p>
+          </article>
+        </div>
+        <p class="tvc-throughput-compromise" id="throughput-explanation-compromise"></p>
+      </div>
+      <div class="figure-interpretation tvc-throughput-method">
+        <h3>How far these rankings can be generalized</h3>
+        <p>
+          Training bars aggregate five independent runs and display sample-standard-
+          deviation error bars. Generation and decode use the declared seed-42
+          checkpoint at a 64-token prompt and batch size one, with 10 warm-ups and 30
+          measured repetitions; they quantify timing variation, not checkpoint-seed
+          variation. The 4K prefill value is aggregated across all five final
+          checkpoints.
+        </p>
+        <p>
+          These measurements come from one NVIDIA L4-24Q and these particular
+          implementations. They show realized speed, not a universal architecture
+          ranking: kernel maturity, synchronization, cache layout, memory traffic, and
+          occupancy can outweigh asymptotic complexity at this scale.
+        </p>
+      </div>
     </figcaption>
   </figure>
 </section>

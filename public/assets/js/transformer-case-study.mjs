@@ -8,6 +8,7 @@ const {
   buildComparisonRows,
   contextSeries,
   metricSeries,
+  throughputExtremes,
 } = await import(helperUrl.href);
 
 const root = document.querySelector("#transformer-case-study");
@@ -474,6 +475,62 @@ function renderThroughput(summary, metric) {
     "The table lists every measured value and seed-level error where available.");
 }
 
+function formatRate(value) {
+  return `${compact.format(value)} tokens/s`;
+}
+
+function readThroughputExplanations() {
+  const source = root.querySelector("#throughput-explanation-content");
+  if (!source?.textContent) return {};
+  return JSON.parse(source.textContent);
+}
+
+function fillTemplate(template, values) {
+  return template.replace(/\[\[(\w+)\]\]/g, (_, key) => values[key] ?? "");
+}
+
+function updateThroughputExplanation(summary, metric) {
+  const explanation = readThroughputExplanations()[metric];
+  const panel = root.querySelector("#throughput-explanation");
+  if (!explanation || !panel) return;
+  const extremes = throughputExtremes(summary, metric);
+  const templateValues = {
+    measuredCount: String(extremes.measuredCount),
+    leader: names[extremes.leader.variant],
+    leaderRate: formatRate(extremes.leader.value),
+    ratio: extremes.ratio.toFixed(1),
+    laggard: names[extremes.laggard.variant],
+    laggardRate: formatRate(extremes.laggard.value),
+  };
+  const setText = (selector, text) => {
+    const element = panel.querySelector(selector);
+    if (element) element.textContent = text;
+  };
+  setText("#throughput-explanation-workload", explanation.workload);
+  setText(
+    "#throughput-explanation-title",
+    `${names[extremes.leader.variant]} led; ${names[extremes.laggard.variant]} trailed`,
+  );
+  setText(
+    "#throughput-explanation-graph",
+    fillTemplate(explanation.graph, templateValues),
+  );
+  setText(
+    "#throughput-explanation-leader-heading",
+    `Why ${names[extremes.leader.variant]} performed well`,
+  );
+  setText("#throughput-explanation-leader", explanation.leader);
+  setText(
+    "#throughput-explanation-laggard-heading",
+    `Why ${names[extremes.laggard.variant]} performed poorly`,
+  );
+  setText("#throughput-explanation-laggard", explanation.laggard);
+  setText(
+    "#throughput-explanation-compromise",
+    `The compromise: ${explanation.compromise}`,
+  );
+}
+
 function setupThroughput(summary) {
   const buttons = [...root.querySelectorAll("[data-throughput-metric]")];
   if (!buttons.length) return;
@@ -484,6 +541,7 @@ function setupThroughput(summary) {
       candidate.setAttribute("aria-pressed", String(active));
     }
     renderThroughput(summary, metric);
+    updateThroughputExplanation(summary, metric);
   };
   for (const button of buttons) {
     button.addEventListener("click", () => select(button.dataset.throughputMetric));

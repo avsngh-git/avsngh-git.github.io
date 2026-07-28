@@ -5,6 +5,7 @@ import {
   buildComparisonRows,
   contextSeries,
   metricSeries,
+  throughputExtremes,
 } from "../../../public/assets/js/transformer-case-study-data.mjs";
 
 const summary = {
@@ -18,6 +19,11 @@ const summary = {
       variant: "vanilla",
       fixedDataLoss: { mean: 3.94 },
       prefillTokensPerSecond4k: null,
+    },
+    {
+      variant: "linear",
+      fixedDataLoss: { mean: 4.08 },
+      prefillTokensPerSecond4k: 40_000,
     },
   ],
   contextMetrics: {
@@ -38,7 +44,17 @@ describe("production case-study data transforms", () => {
   it("excludes unsupported metric values without inventing zeroes", () => {
     expect(metricSeries(summary, "prefillTokensPerSecond4k")).toEqual([
       { variant: "modern", value: 120_000 },
+      { variant: "linear", value: 40_000 },
     ]);
+  });
+
+  it("identifies the measured throughput leader, laggard, and speed ratio", () => {
+    expect(throughputExtremes(summary, "prefillTokensPerSecond4k")).toEqual({
+      leader: { variant: "modern", value: 120_000 },
+      laggard: { variant: "linear", value: 40_000 },
+      ratio: 3,
+      measuredCount: 2,
+    });
   });
 
   it("preserves context order and returns explicit attention fallbacks", () => {
