@@ -777,7 +777,8 @@
   margin-bottom: 0;
 }
 
-.tvc-throughput-explanation {
+.tvc-throughput-explanation,
+.tvc-dynamic-story {
   padding: clamp(1.05rem, 2vw, 1.4rem);
   border: 1px solid var(--tvc-border);
   border-top: 4px solid var(--tvc-primary);
@@ -796,7 +797,8 @@
   text-transform: uppercase;
 }
 
-.tvc-throughput-explanation h3 {
+.tvc-throughput-explanation h3,
+.tvc-dynamic-story h3 {
   margin: 0 0 0.7rem;
   font-size: clamp(1.15rem, 2vw, 1.45rem);
 }
@@ -833,7 +835,8 @@
   border-left: 3px solid var(--tvc-primary);
 }
 
-.tvc-throughput-method {
+.tvc-throughput-method,
+.tvc-dynamic-story-method {
   margin-top: 0.85rem;
 }
 

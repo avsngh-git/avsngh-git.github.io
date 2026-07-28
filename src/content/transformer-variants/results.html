@@ -46,8 +46,9 @@
       </p>
     </figcaption>
   </figure>
-  <script type="application/json" id="throughput-explanation-content">
+  <script type="application/json" id="results-story-content">
     {
+      "throughput": {
       "trainingTokensPerSecond": {
         "workload": "Training throughput",
         "graph": "The bars rank [[measuredCount]] recipes by end-to-end training tokens per second, including the forward pass, backward pass, and optimizer update. [[leader]] has the highest mean at [[leaderRate]], [[ratio]]× the [[laggardRate]] measured for [[laggard]]. Error bars show variation across five training seeds.",
@@ -83,6 +84,79 @@
         "laggard": "Causal linear attention has attractive linear asymptotic scaling, but this implementation updates prefix statistics through a serial, unfused recurrence. On the L4, poor parallel utilization outweighed the reduction in theoretical work.",
         "compromise": "Sliding-Window Attention reaches 204.9K tokens/s, but direct access is restricted to a 256-token window; it recorded 4.1555 validation loss and no exact distant retrieval. Causal linear attention is slowest here at 34.3K tokens/s, but it achieved better validation loss than Sliding-Window Attention, 4.0782 versus 4.1555, and used the smallest measured cache at 1.06 MB."
       }
+      },
+      "learning": {
+        "tokens": {
+          "eyebrow": "Fixed training data",
+          "title": "[[leader]] has the lowest loss at the shared token budget",
+          "graph": "The horizontal axis counts tokens processed, so every recipe is compared after seeing the same amount of training text. At [[budget]], [[leader]] reaches [[leaderValue]] loss; [[laggard]] is highest at [[laggardValue]]. Lower loss is better.",
+          "leaderHeading": "Why [[leader]] leads this view",
+          "leader": "Mixture of Experts stores eight feed-forward experts and selects two for each token. That conditional capacity lets it learn more from the same data while keeping active parameters close to the dense recipes.",
+          "tradeoffHeading": "What the token view hides",
+          "tradeoff": "A training token does not have the same wall-clock cost in every recipe. Mixture of Experts processed only 31.2K tokens/s, while the fastest dense and local recipes were near 80.2K. Its statistical efficiency therefore comes with much slower training."
+        },
+        "wallclock": {
+          "eyebrow": "Equal elapsed training time",
+          "title": "[[leader]] has the lowest loss at the shared time budget",
+          "graph": "The horizontal axis is elapsed accelerator time. The comparison uses [[budget]], the longest time reached by every recipe. At that point, [[leader]] is lowest at [[leaderValue]] loss and [[laggard]] is highest at [[laggardValue]].",
+          "leaderHeading": "Why [[leader]] leads this view",
+          "leader": "Modern combines substantially better prediction quality than the fastest Grouped-Query and Sliding-Window recipes with a regular dense implementation that trains at 69.7K tokens/s. That balance matters more here than either quality per token or raw throughput alone.",
+          "tradeoffHeading": "What changes from fixed tokens",
+          "tradeoff": "Mixture of Experts remains competitive because its extra capacity improves each token, but routing slows how many tokens it can process in the same time. Grouped-Query Attention finishes the 500M-token run quickly yet still has the highest loss, so speed alone does not guarantee faster learning."
+        },
+        "flops": {
+          "eyebrow": "Equal modeled arithmetic",
+          "title": "[[leader]] has the lowest loss at the shared FLOP budget",
+          "graph": "The horizontal axis uses estimated cumulative floating-point operations. At the shared budget of [[budget]], [[leader]] reaches [[leaderValue]] loss; [[laggard]] is highest at [[laggardValue]].",
+          "leaderHeading": "Why [[leader]] leads this view",
+          "leader": "The Mixture of Experts comparison matches active parameters rather than stored parameters. Only two experts are active for each token, so its additional stored capacity improves prediction without charging all eight experts to the modeled operation count.",
+          "tradeoffHeading": "What modeled FLOPs omit",
+          "tradeoff": "Estimated FLOPs do not include the full cost of routing, synchronization, memory traffic, or low GPU occupancy. Mixture of Experts looks efficient on this axis but is slowest in measured training throughput; the wall-clock view captures that implementation cost."
+        }
+      },
+      "context": {
+        "tailPerplexity": {
+          "eyebrow": "Prediction stability as context grows",
+          "title": "[[firstLeader]] leads at 1K; [[lastLeader]] leads at 4K",
+          "graph": "Each point scores the same final 256 targets while the visible prefix grows. Lower tail perplexity is better. [[firstLeader]] starts lowest at [[firstValue]] at 1K, while [[lastLeader]] is lowest at [[lastValue]] at 4K. [[lastLaggard]] is highest at 4K with [[lastLaggardValue]].",
+          "leaderHeading": "Why the long-context leader changes",
+          "leader": "Mixture of Experts has the strongest in-range prediction quality, but its global rotary positions move far beyond the 1K training range. ALiBI keeps applying the same distance rule at 4K, so its prediction quality degrades far less.",
+          "tradeoffHeading": "The compromise",
+          "tradeoff": "ALiBI’s 4K stability comes with weaker in-range loss than Modern or Mixture of Experts. Sliding-Window Attention is almost as stable because every token sees only a fixed local window, but that stability does not mean it can directly retrieve a distant fact."
+        },
+        "prefillTokensPerSecond": {
+          "eyebrow": "Prompt-processing speed as context grows",
+          "title": "[[firstLeader]] leads at 1K; [[lastLeader]] leads at 4K",
+          "graph": "The chart measures how many prompt tokens each recipe processes per second; higher is better. [[firstLeader]] leads at 1K with [[firstValue]], while [[lastLeader]] leads at 4K with [[lastValue]]. [[lastLaggard]] is slowest at 4K with [[lastLaggardValue]].",
+          "leaderHeading": "Why [[lastLeader]] wins at 4K",
+          "leader": "Sliding-Window Attention bounds each query to 256 positions instead of comparing it with the entire 4K prefix. The saved long-sequence attention work becomes increasingly valuable as the prompt grows.",
+          "tradeoffHeading": "The compromise",
+          "tradeoff": "Sliding-Window Attention gains prompt speed by giving up direct global access and records weaker in-range validation loss. Causal linear attention has attractive theoretical scaling, but its serial, unfused recurrence is the slowest measured 4K implementation. Vanilla is unsupported beyond its learned 1K position table, not measured as zero."
+        }
+      },
+      "retrieval": {
+        "eyebrow": "Selected distant-fact diagnostic",
+        "title": "[[taskLabel]] · [[distanceLabel]]",
+        "graph": "[[taskDescription]] [[configurationDescription]] [[distanceDescription]] The heatmap compares [[cellCount]] supported recipe-context cells.",
+        "leaderHeading": "What changed the answer most",
+        "leader": "[[positiveCount]] of [[cellCount]] displayed cells have positive mean evidence. The strongest is [[bestVariant]] at [[bestContext]] tokens with a lift of [[bestValue]]; the weakest is [[worstVariant]] at [[worstContext]] tokens with [[worstValue]].",
+        "tradeoffHeading": "What this still does not prove",
+        "tradeoff": "Positive evidence means the planted fact raised the correct answer’s probability relative to a matched fact-removed prompt. It is not an exact retrieval success: across the full experiment, the correct answer never reached rank 1 or the top 5.",
+        "tasks": {
+          "passkey": "The passkey task plants a numeric key and asks the model to produce that value.",
+          "needle": "The needle task hides a short factual statement inside unrelated text and asks for its answer."
+        },
+        "configurations": {
+          "rope_standard": "Rotary-position recipes use their native base of 10,000; ALiBI and Vanilla remain on their own position mechanisms.",
+          "rope_theta_100000": "Rotary-position recipes are evaluated with a larger base of 100,000; ALiBI and Vanilla are unchanged because they do not use rotary positions."
+        },
+        "distances": {
+          "aggregate": "Each cell averages all tested fact distances.",
+          "near": "Each cell uses the nearest tested fact placement.",
+          "middle": "Each cell uses the middle tested fact placement.",
+          "far": "Each cell uses the farthest tested fact placement."
+        }
+      }
     }
   </script>
 </section>
@@ -117,7 +191,14 @@
       role="img"
       aria-label="Interactive validation-loss learning curves for ten Transformer recipes"
     ><p class="tvc-loading">Loading five-seed learning curves…</p></div>
-    <figcaption class="figure-interpretation">
+    <figcaption>
+      <div
+        class="tvc-dynamic-story"
+        id="learning-story"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
+      <div class="figure-interpretation tvc-dynamic-story-method">
       <h3>What the curves establish</h3>
       <p>
         At fixed data, sparse capacity is powerful: the Mixture of Experts family descends below the
@@ -141,6 +222,7 @@
         fresh 50-batch protocol; its endpoint is authoritative when the two displays
         differ slightly.
       </p>
+      </div>
     </figcaption>
   </figure>
 </section>
@@ -209,7 +291,14 @@
       aria-live="polite"
     ><p class="tvc-loading">Loading frozen context measurements…</p></div>
     <noscript><p>The interactive five-seed context measurements require JavaScript; all raw values remain available in the linked project repository.</p></noscript>
-    <figcaption class="figure-interpretation">
+    <figcaption>
+      <div
+        class="tvc-dynamic-story"
+        id="context-story"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
+      <div class="figure-interpretation tvc-dynamic-story-method">
       <h3>Why the quality leaders reverse</h3>
       <p>
         At 1K, the three Mixture of Experts placements are strongest among the extrapolatable
@@ -231,6 +320,7 @@
         five checkpoint seeds; each checkpoint estimate averages the same eight
         validation windows. The test measures paired-tail calibration, not retrieval.
       </p>
+      </div>
     </figcaption>
   </figure>
 </section>
@@ -293,7 +383,14 @@
       role="img"
       aria-label="Interactive heatmap of answer-token evidence by Transformer recipe and context length"
     ><p class="tvc-loading">Loading five-seed retrieval probes…</p></div>
-    <figcaption class="figure-interpretation">
+    <figcaption>
+      <div
+        class="tvc-dynamic-story"
+        id="retrieval-story"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
+      <div class="figure-interpretation tvc-dynamic-story-method">
       <h3>Confidence is not the same as retrieval</h3>
       <p>
         Each heatmap cell shows answer-evidence lift: the correct answer’s
@@ -323,6 +420,7 @@
         The current exact result supports no claim of usable zero-shot distant-fact
         retrieval under the displayed protocol.
       </p>
+      </div>
     </figcaption>
   </figure>
 </section>
