@@ -6,6 +6,7 @@ import internals from "../content/transformer-variants/internals.html?raw";
 import overview from "../content/transformer-variants/overview.html?raw";
 import results from "../content/transformer-variants/results.html?raw";
 import { CaseStudyRuntime } from "../features/transformer-variants/CaseStudyRuntime";
+import { VariantExplorer } from "../features/transformer-variants/VariantExplorer";
 import {
   CASE_STUDY_ASSET_VERSION,
   caseStudyAssets,
@@ -17,46 +18,46 @@ const chapters = [
   {
     id: "overview",
     number: "01",
-    label: "Overview",
-    title: "Transformer Variants: what changed, what improved, and what it cost",
+    label: "Why this study",
+    title: "Why compare Transformer variants under one controlled system?",
     intro:
-      "A five-seed comparison of ten approximately 50M-active-parameter decoder recipes across prediction quality, long-context extrapolation, throughput, internal representations, routing, and operational reliability.",
+      "The project separates prediction quality, memory use, training speed, generation speed, and long-context behavior instead of compressing them into one vague claim of efficiency.",
     html: overview,
   },
   {
     id: "architecture",
     number: "02",
-    label: "Architecture choices",
-    title: "The architectural choices, compared mechanism by mechanism",
+    label: "Meet the variants",
+    title: "Ten Transformer recipes, explained before they are compared",
     intro:
-      "Learned positions, RoPE, ALiBI, full attention, GQA, sliding windows, linear recurrence, dense feed-forwards, and MoE each change a different part of the computation—and create different expectations.",
+      "Use the tabs to learn what each recipe changes, why it was included, and which benefit or cost it was designed to test.",
     html: architecture,
   },
   {
     id: "experiments",
     number: "03",
-    label: "Experimental design",
-    title: "A fair comparison is an experimental system, not a leaderboard",
+    label: "How it was tested",
+    title: "How the comparison keeps architecture—not the pipeline—as the main difference",
     intro:
-      "The corpus, tokenizer, sequence length, token budget, optimizer, target windows, and uncertainty units were held fixed so architectural mechanisms—not accidental pipeline differences—drive the comparison.",
+      "The data, tokenizer, training length, token budget, optimizer, evaluation windows, and uncertainty units are held fixed wherever the architecture permits.",
     html: experiments,
   },
   {
     id: "results",
     number: "04",
-    label: "Results",
-    title: "The results: no universal winner, but several decisive trade-offs",
+    label: "What happened",
+    title: "What happened when quality, speed, and context were measured separately",
     intro:
-      "Quality, elapsed time, FLOPs, long-context behavior, and serving throughput answer different questions. Read together, they explain why the model with the lowest loss was not the fastest or the most robust beyond 1K tokens.",
+      "The model with the lowest prediction error was not the fastest to train, the fastest to serve, or the most stable beyond the training length.",
     html: results,
   },
   {
     id: "internals",
     number: "05",
-    label: "Internals & engineering",
-    title: "Inside the models—and inside the system that made them comparable",
+    label: "What it means",
+    title: "What the evidence supports, how the models differ inside, and where the claims stop",
     intro:
-      "Representation probes and attention patterns help explain how the recipes differ, while registry-driven construction, streaming data, verified recovery, and frozen publication assets make the evidence reproducible.",
+      "Internal probes add context to the behavioral results. Engineering decisions make the evidence reproducible, and explicit limitations keep the conclusions within scope.",
     html: internals,
   },
 ] as const;
@@ -88,20 +89,19 @@ export function CaseStudyPage() {
               <div>
                 <p className="tvc-eyebrow">Long-form research case study</p>
                 <h1>
-                  Transformer Variants: what changed, what improved, and what it cost
+                  Transformer Variants: which efficiency claims survive measurement?
                 </h1>
                 <p className="tvc-lede">
-                  A five-seed comparison of ten approximately
-                  50M-active-parameter decoder recipes across prediction quality,
-                  long-context extrapolation, throughput, internal representations,
-                  routing, and operational reliability.
+                  Ten small language-model recipes, fifty main training runs, and one
+                  controlled system for comparing prediction quality, speed, memory,
+                  and behavior beyond the training context.
                 </p>
               </div>
               <img
                 data-case-asset
                 className="tvc-hero-visual"
-                src="/assets/transformer-variants/thumbnail.svg"
-                alt="Dense, local, linear, and mixture-of-experts Transformer paths leading to a quality-versus-throughput comparison"
+                src="/assets/transformer-variants/transformer-variants-card.webp"
+                alt="Diagram comparing full attention, local attention, linear attention, and routed expert paths"
               />
             </div>
             <nav
@@ -138,6 +138,7 @@ export function CaseStudyPage() {
                     <p className="tvc-chapter-intro">{chapter.intro}</p>
                   </header>
                 )}
+                {chapter.id === "architecture" ? <VariantExplorer /> : null}
                 <div dangerouslySetInnerHTML={{ __html: chapter.html }} />
               </section>
             ))}

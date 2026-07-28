@@ -1,19 +1,19 @@
 .tvc {
-  --tvc-primary: #0069d9;
-  --tvc-primary-strong: #0056b3;
-  --tvc-primary-fill: #0069d9;
-  --tvc-border: rgba(127, 127, 127, 0.28);
-  --tvc-surface: rgba(127, 127, 127, 0.07);
-  --tvc-surface-strong: rgba(0, 123, 255, 0.1);
+  --tvc-primary: var(--accent);
+  --tvc-primary-strong: var(--accent-strong);
+  --tvc-primary-fill: var(--accent);
+  --tvc-border: rgba(13, 17, 22, 0.16);
+  --tvc-surface: rgba(13, 17, 22, 0.045);
+  --tvc-surface-strong: rgba(111, 44, 255, 0.09);
   --tvc-muted: #6c757d;
-  --tvc-radius: 0.45rem;
+  --tvc-radius: 0.25rem;
   color: inherit;
   font-size: 1.04rem;
   line-height: 1.72;
 }
 
 .case-study-shell {
-  width: min(100% - 2rem, 1440px);
+  width: min(100% - 2rem, 1320px);
   margin: 0 auto;
   padding: clamp(2rem, 5vw, 5rem) 0;
 }
@@ -33,8 +33,12 @@
 }
 
 [data-theme="dark"] .tvc {
-  --tvc-primary: #58a6ff;
-  --tvc-primary-strong: #79b8ff;
+  --tvc-primary: #a982ff;
+  --tvc-primary-strong: #c5adff;
+  --tvc-primary-fill: #6f2cff;
+  --tvc-border: rgba(255, 255, 255, 0.16);
+  --tvc-surface: rgba(255, 255, 255, 0.045);
+  --tvc-surface-strong: rgba(111, 44, 255, 0.18);
   --tvc-muted: #a3abb2;
 }
 
@@ -136,9 +140,11 @@
 .tvc-chapter-hero > .tvc-hero-visual {
   display: block;
   width: 100%;
+  aspect-ratio: 3 / 2;
   border: 1px solid var(--tvc-border);
   border-radius: var(--tvc-radius);
-  background: #fff;
+  background: var(--surface-dark);
+  object-fit: cover;
 }
 
 .tvc-hero {
@@ -216,7 +222,7 @@
 .tvc-chapter-link:focus-visible {
   transform: translateY(-2px);
   background: var(--tvc-surface-strong);
-  box-shadow: 0 0.4rem 1rem rgba(0, 123, 255, 0.18);
+  box-shadow: 0 0.4rem 1rem rgba(111, 44, 255, 0.18);
 }
 
 .tvc-chapter-link[aria-current="page"] {
@@ -396,7 +402,7 @@
 .tvc-chapter-card:hover,
 .tvc-chapter-card:focus-visible {
   transform: translateY(-3px);
-  box-shadow: 0 0.55rem 1.3rem rgba(0, 123, 255, 0.2);
+  box-shadow: 0 0.55rem 1.3rem rgba(111, 44, 255, 0.2);
 }
 
 .tvc-chapter-card h3,
@@ -431,7 +437,7 @@
 .tvc-chapter-cards > a:hover,
 .tvc-chapter-cards > a:focus-visible {
   transform: translateY(-3px);
-  box-shadow: 0 0.55rem 1.3rem rgba(0, 123, 255, 0.2);
+  box-shadow: 0 0.55rem 1.3rem rgba(111, 44, 255, 0.2);
 }
 
 .tvc-chapter-cards > a > span,
@@ -775,7 +781,7 @@
 .tvc-control-panel {
   margin: 1rem 0;
   padding: 1rem;
-  border: 1px solid rgba(0, 123, 255, 0.35);
+  border: 1px solid rgba(111, 44, 255, 0.38);
   border-radius: var(--tvc-radius);
   background: var(--tvc-surface-strong);
 }
@@ -818,7 +824,7 @@
 .tvc select:focus-visible,
 .tvc button[aria-pressed="true"] {
   outline: none;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.22);
+  box-shadow: 0 0 0 0.2rem rgba(111, 44, 255, 0.24);
 }
 
 .tvc button[aria-pressed="true"] {
@@ -1317,6 +1323,220 @@
   background: var(--tvc-surface-strong);
 }
 
+.tvc-goal-grid,
+.tvc-axis-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.tvc-goal-grid > article,
+.tvc-axis-list > article {
+  padding: 1.35rem;
+  border: 1px solid var(--tvc-border);
+  border-top: 3px solid var(--tvc-primary);
+  border-radius: var(--tvc-radius);
+  background: var(--tvc-surface);
+}
+
+.tvc-goal-grid span,
+.tvc-axis-list span {
+  color: var(--tvc-primary);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.tvc-goal-grid h3,
+.tvc-axis-list h3 {
+  margin: 0.45rem 0 0.6rem;
+  font-size: 1.2rem;
+}
+
+.tvc-goal-grid p,
+.tvc-axis-list p {
+  margin: 0;
+}
+
+.tvc-glossary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 1.5rem 0 0;
+  border-top: 1px solid var(--tvc-border);
+}
+
+.tvc-glossary > div {
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--tvc-border);
+}
+
+.tvc-glossary > div:nth-child(odd) {
+  border-right: 1px solid var(--tvc-border);
+}
+
+.tvc-glossary dt {
+  color: var(--tvc-primary);
+  font-weight: 900;
+}
+
+.tvc-glossary dd {
+  margin: 0.3rem 0 0;
+  color: var(--tvc-muted);
+  line-height: 1.55;
+}
+
+.tvc-variant-tabs {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.28fr) minmax(0, 1fr);
+  width: min(100%, 1120px);
+  min-height: 570px;
+  margin: 1.6rem auto 0;
+  border: 1px solid var(--tvc-border);
+  border-radius: var(--tvc-radius);
+  background: var(--tvc-surface);
+}
+
+.tvc-tab-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem;
+  border-right: 1px solid var(--tvc-border);
+  background: var(--tvc-surface);
+}
+
+.tvc .tvc-tab {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.6rem;
+  min-height: 3.1rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  color: inherit;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.tvc .tvc-tab > span {
+  color: var(--tvc-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.tvc .tvc-tab:hover,
+.tvc .tvc-tab:focus-visible {
+  background: var(--tvc-surface-strong);
+  box-shadow: none;
+}
+
+.tvc .tvc-tab[aria-selected="true"] {
+  border-left-color: var(--tvc-primary);
+  background: var(--tvc-primary-fill);
+  color: #fff;
+}
+
+.tvc .tvc-tab[aria-selected="true"] > span {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.tvc-tab-panel {
+  min-width: 0;
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+  outline: none;
+}
+
+.tvc-tab-panel:focus-visible {
+  box-shadow: inset 0 0 0 3px rgba(111, 44, 255, 0.35);
+}
+
+.tvc-tab-panel > header {
+  padding-bottom: 1.3rem;
+  border-bottom: 1px solid var(--tvc-border);
+}
+
+.tvc-tab-panel > header > p {
+  margin: 0;
+  color: var(--tvc-primary);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.tvc-tab-panel > header h3 {
+  margin: 0.35rem 0 0.9rem;
+  font-size: clamp(1.65rem, 4vw, 2.5rem);
+}
+
+.tvc-tab-panel > header ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tvc-tab-panel > header li {
+  width: auto;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--tvc-border);
+  border-radius: 999px;
+  color: var(--tvc-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.tvc-variant-explanation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.4rem 1.8rem;
+  padding-top: 1.5rem;
+}
+
+.tvc-variant-explanation > div {
+  min-width: 0;
+}
+
+.tvc-variant-explanation span {
+  color: var(--tvc-primary);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.tvc-variant-explanation h4 {
+  margin: 0.25rem 0 0.45rem;
+  font-size: 1rem;
+}
+
+.tvc-variant-explanation p {
+  margin: 0;
+  color: var(--tvc-muted);
+  line-height: 1.6;
+}
+
+.tvc-variant-explanation .tvc-variant-result {
+  padding: 1rem;
+  border-left: 3px solid var(--tvc-primary);
+  background: var(--tvc-surface-strong);
+}
+
+.tvc-variant-explanation .tvc-variant-result p {
+  color: inherit;
+}
+
+.tvc-tab-help {
+  width: min(100%, 1120px);
+  margin: 0.7rem auto 0;
+  color: var(--tvc-muted);
+  font-size: 0.78rem;
+}
+
 @media (max-width: 850px) {
   .tvc-hero,
   .tvc-chapter-hero {
@@ -1357,6 +1577,31 @@
   .tvc-mechanism-body {
     grid-template-columns: 1fr;
   }
+
+  .tvc-variant-tabs {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .tvc-tab-list {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--tvc-border);
+    scrollbar-width: thin;
+  }
+
+  .tvc .tvc-tab {
+    flex: 0 0 auto;
+    grid-template-columns: auto auto;
+    border-left: 0;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+  }
+
+  .tvc .tvc-tab[aria-selected="true"] {
+    border-bottom-color: var(--tvc-primary);
+  }
 }
 
 @media (max-width: 600px) {
@@ -1376,10 +1621,18 @@
   .tvc-limit-list,
   .tvc-flow,
   .tvc-protocol-steps,
+  .tvc-goal-grid,
+  .tvc-axis-list,
+  .tvc-glossary,
+  .tvc-variant-explanation,
   .tvc-attention-controls,
   .tvc-chapter-pager,
   .tvc-pager {
     grid-template-columns: 1fr;
+  }
+
+  .tvc-glossary > div:nth-child(odd) {
+    border-right: 0;
   }
 
   .tvc-pager a:last-child {

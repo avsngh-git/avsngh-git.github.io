@@ -2,16 +2,14 @@
   <p class="tvc-section-kicker">How to read this chapter</p>
   <h2>The ranking changes when the resource changes</h2>
   <p class="tvc-lead-paragraph">
-    “Best model” is under-specified. Fixed-data quality, cached decode, uncached
-    generation, long-prompt prefill, stored parameters, active parameters, and
-    extrapolation stability are different endpoints. The same recipe need not lead
-    all of them, and an unsupported capability is kept distinct from a measured zero.
+    “Best model” is incomplete without naming the resource. Prediction quality,
+    training time, stored parameters, KV-cached generation, prompt processing, and
+    behavior beyond the training length are different outcomes.
   </p>
   <p>
-    The figures below deliberately preserve that multidimensional result. Every chart
-    is displayed at full width; the learning-curve views occupy the same figure one at
-    a time so labels and seed traces remain legible. Interactive controls are marked in
-    blue and announce exactly what changes when selected.
+    The charts answer one question at a time. An unsupported capability is kept
+    distinct from a measured zero, and the controls state which measure changes when
+    selected.
   </p>
 </section>
 
@@ -66,7 +64,7 @@
 
   <div class="tvc-interactive-prompt">
     <span class="tvc-prompt-icon" aria-hidden="true">↕</span>
-    <div><strong>Interactive figure</strong><p>Choose the budget on the blue buttons. The large plot below updates in place.</p></div>
+    <div><strong>Interactive figure</strong><p>Choose the budget with the highlighted buttons. The large plot below updates in place.</p></div>
   </div>
   <div class="tvc-control-row tvc-control-panel" role="group" aria-label="Select learning-curve budget">
     <button class="is-active" type="button" data-learning-axis="tokens"><span>01</span> Fixed tokens</button>
@@ -290,14 +288,17 @@
 <section class="tvc-section" id="throughput-results">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Serving behavior</p>
-    <h2>Training, generation, decode, and prefill exercise different hardware paths</h2>
+    <h2>Prompt processing and token generation are different workloads</h2>
     <p>
-      Training combines forward, backward, optimizer, and gradient-accumulation work.
-      Autoregressive generation advances one token at a time and benefits strongly
-      from reusable key/value state; steady-state decode removes prompt setup from
-      that timing. Prefill processes prompt tokens in parallel and exposes the
-      attention operator at long sequence lengths. One throughput number cannot
-      describe all four workloads.
+      A <strong>key-value cache (KV cache)</strong> saves attention information from
+      earlier tokens so it does not need to be recomputed after every generated token.
+      <strong>Prefill</strong> processes the input prompt; <strong>decode</strong>
+      generates later tokens one at a time, usually by reusing that cache.
+    </p>
+    <p>
+      Training adds backward passes and optimizer work. These workloads exercise
+      different kernels and memory paths, so one throughput number cannot describe
+      all of them.
     </p>
   </div>
   <div class="tvc-interactive-prompt">
@@ -306,9 +307,9 @@
   </div>
   <div class="tvc-control-row tvc-control-panel" role="group" aria-label="Select throughput workload">
     <button class="is-active" type="button" data-throughput-metric="trainingTokensPerSecond"><span>01</span> Training throughput</button>
-    <button type="button" data-throughput-metric="cachedGenerationTokensPerSecond"><span>02</span> Cached end-to-end</button>
-    <button type="button" data-throughput-metric="cachedDecodeTokensPerSecond"><span>03</span> Cached steady decode</button>
-    <button type="button" data-throughput-metric="uncachedGenerationTokensPerSecond"><span>04</span> Uncached generation</button>
+    <button type="button" data-throughput-metric="cachedGenerationTokensPerSecond"><span>02</span> KV-cached generation</button>
+    <button type="button" data-throughput-metric="cachedDecodeTokensPerSecond"><span>03</span> KV-cached decode</button>
+    <button type="button" data-throughput-metric="uncachedGenerationTokensPerSecond"><span>04</span> Generation without cache</button>
     <button type="button" data-throughput-metric="prefillTokensPerSecond4k"><span>05</span> 4K prompt prefill</button>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="throughput-figure">
@@ -323,7 +324,7 @@
     <figcaption class="figure-interpretation">
       <h3>What realized speed adds to complexity analysis</h3>
       <p>
-        Vanilla leads cached short generation at <strong>512.8 tokens/s</strong>,
+        Vanilla leads KV-cached short generation at <strong>512.8 tokens/s</strong>,
         followed by ALiBI at 364.4 and Modern at 336.2. Pure SWA leads 4K prefill at
         <strong>204.9K tokens/s</strong>; SWA interleaved, GQA, and ALiBI follow at
         176.0K, 168.9K, and 160.1K. Every recipe produced a reusable cache in this
@@ -359,7 +360,7 @@
   </div>
   <div class="tvc-interactive-prompt">
     <span class="tvc-prompt-icon" aria-hidden="true">↕</span>
-    <div><strong>Sortable table</strong><p>Select any blue column heading to rank the recipes. Select it again to reverse the order.</p></div>
+    <div><strong>Sortable table</strong><p>Select any highlighted column heading to rank the recipes. Select it again to reverse the order.</p></div>
   </div>
   <div class="tvc-table-scroll tvc-wide-table">
     <table id="variant-comparison" class="tvc-comparison-table">
@@ -368,7 +369,7 @@
         <th scope="col"><button data-sort="fixedDataLoss">Fixed-data loss ↓</button></th>
         <th scope="col"><button data-sort="activeParameters">Active params</button></th>
         <th scope="col"><button data-sort="totalParameters">Total params</button></th>
-        <th scope="col"><button data-sort="cachedGenerationTokensPerSecond">Cached generation tok/s ↑</button></th>
+        <th scope="col"><button data-sort="cachedGenerationTokensPerSecond">KV-cached generation tok/s ↑</button></th>
         <th scope="col"><button data-sort="tailPerplexity4k">4K tail PPL ↓</button></th>
         <th scope="col"><button data-sort="prefillTokensPerSecond4k">4K prefill tok/s ↑</button></th>
         <th scope="col"><button data-sort="cacheStatus">KV cache</button></th>

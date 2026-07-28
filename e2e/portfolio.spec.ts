@@ -47,9 +47,14 @@ test("case-study route initializes frozen interactive evidence", async ({ page }
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: /Transformer Variants: what changed/i,
+      name: /Transformer Variants: which efficiency claims/i,
     }),
   ).toBeVisible();
+  await expect(page.getByRole("tab")).toHaveCount(10);
+  await page.getByRole("tab", { name: /02 Modern/ }).click();
+  await expect(page.getByRole("tabpanel")).toContainText(
+    "current dense Transformer stack",
+  );
   await expect(page.locator("#fixed-data-chart.js-plotly-plot")).toBeVisible({
     timeout: 20_000,
   });
@@ -80,7 +85,7 @@ test("case-study controls update every interactive evidence view", async ({
   ).toContainText("Elapsed training seconds");
 
   const cachedDecode = page.getByRole("button", {
-    name: /Cached steady decode/,
+    name: /KV-cached decode/,
   });
   await cachedDecode.click();
   await expect(cachedDecode).toHaveAttribute("aria-pressed", "true");
@@ -160,7 +165,7 @@ test("legacy chapter routes redirect to matching consolidated anchors", async ({
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: /Transformer Variants: what changed/i,
+      name: /Transformer Variants: which efficiency claims/i,
     }),
   ).toBeVisible();
 });
