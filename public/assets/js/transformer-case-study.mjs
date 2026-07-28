@@ -6,8 +6,13 @@ if (assetVersion) helperUrl.searchParams.set("v", assetVersion);
 const {
   attentionAssetFor,
   buildComparisonRows,
+  commonBudgetSnapshot,
   contextSeries,
+  fillTemplate,
   metricSeries,
+  summarizeAttentionWeights,
+  summarizeRetrievalHeatmap,
+  summarizeRoutingUtilization,
   throughputExtremes,
 } = await import(helperUrl.href);
 
@@ -57,6 +62,27 @@ async function fetchJson(url) {
     throw new Error("Could not load " + requestUrl.href + " (" + response.status + ").");
   }
   return response.json();
+}
+
+function readStoryContent(id) {
+  const source = root.querySelector(`#${id}`);
+  if (!source?.textContent) return {};
+  return JSON.parse(source.textContent);
+}
+
+function storyKey(value) {
+  return value.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+function updateOptionStory(panelId, story, values = {}) {
+  const panel = root.querySelector(`#${panelId}`);
+  if (!panel || !story) return;
+  for (const element of panel.querySelectorAll("[data-story]")) {
+    const text = story[storyKey(element.dataset.story)];
+    element.textContent = typeof text === "string"
+      ? fillTemplate(text, values)
+      : "";
+  }
 }
 
 function chartTheme(extra = {}) {
@@ -378,6 +404,25 @@ function renderLearningCurves(summary, axis) {
   });
 }
 
+function formatLearningBudget(axis, value) {
+  if (axis === "wallclock") return `${(value / 3600).toFixed(2)} hours`;
+  if (axis === "flops") return `${(value / 1e15).toFixed(2)} × 10^15 FLOPs`;
+  return compact.format(value);
+}
+
+function updateLearningStory(summary, axis) {
+  const story = readStoryContent("learning-story-content")[axis];
+  if (!story) return;
+  const snapshot = commonBudgetSnapshot(summary, axis);
+  updateOptionStory("learning-story", story, {
+    budget: formatLearningBudget(axis, snapshot.budget),
+    leader: names[snapshot.leader.variant] || snapshot.leader.variant,
+    leaderLoss: snapshot.leader.loss.toFixed(4),
+    laggard: names[snapshot.laggard.variant] || snapshot.laggard.variant,
+    laggardLoss: snapshot.laggard.loss.toFixed(4),
+  });
+}
+
 function setupLearningTabs(summary) {
   const buttons = [...root.querySelectorAll("[data-learning-axis]")];
   if (!buttons.length) return;
@@ -388,6 +433,7 @@ function setupLearningTabs(summary) {
       candidate.setAttribute("aria-pressed", String(active));
     }
     renderLearningCurves(summary, axis);
+    updateLearningStory(summary, axis);
   };
   for (const button of buttons) {
     button.addEventListener("click", () => select(button.dataset.learningAxis));
@@ -479,18 +525,8 @@ function formatRate(value) {
   return `${compact.format(value)} tokens/s`;
 }
 
-function readThroughputExplanations() {
-  const source = root.querySelector("#throughput-explanation-content");
-  if (!source?.textContent) return {};
-  return JSON.parse(source.textContent);
-}
-
-function fillTemplate(template, values) {
-  return template.replace(/\[\[(\w+)\]\]/g, (_, key) => values[key] ?? "");
-}
-
 function updateThroughputExplanation(summary, metric) {
-  const explanation = readThroughputExplanations()[metric];
+  const explanation = readStoryContent("throughput-explanation-content")[metric];
   const panel = root.querySelector("#throughput-explanation");
   if (!explanation || !panel) return;
   const extremes = throughputExtremes(summary, metric);
@@ -598,10 +634,20 @@ function renderContextChart(summary, metric) {
     "Unsupported context lengths are omitted from the plot, not converted to zero.");
 }
 
+function updateContextStory(metric) {
+  const story = readStoryContent("context-story-content")[metric];
+  updateOptionStory("context-story", story);
+}
+
 function setupContext(summary) {
   const select = root.querySelector("#context-metric");
-  select?.addEventListener("change", () => renderContextChart(summary, select.value));
-  renderContextChart(summary, select?.value || "tailPerplexity");
+  const render = () => {
+    const metric = select?.value || "tailPerplexity";
+    renderContextChart(summary, metric);
+    updateContextStory(metric);
+  };
+  select?.addEventListener("change", render);
+  render();
 }
 
 function retrievalConfiguration(variant, variantPayload, configuration) {
@@ -662,6 +708,44 @@ function retrievalHeatmapRows(
     },
   );
   return { contexts, rows };
+}
+
+function formatSigned(value) {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(3)}`;
+}
+
+function updateRetrievalStory(task, configuration, distanceBucket, contexts, rows) {
+  const content = readStoryContent("retrieval-story-content");
+  const summary = summarizeRetrievalHeatmap(rows, contexts);
+  const taskContent = content.tasks?.[task];
+  const configurationContent = content.configurations?.[configuration];
+  const distanceContent = content.distances?.[distanceBucket];
+  if (!summary || !taskContent || !configurationContent || !distanceContent) return;
+  updateOptionStory("retrieval-story", {
+    eyebrow: taskContent.label,
+    title: content.title,
+    graph: content.graph,
+    taskHeading: content.taskHeading,
+    task: taskContent.meaning,
+    driverHeading: content.driverHeading,
+    driver: content.driver,
+    tradeoffHeading: content.tradeoffHeading,
+    tradeoff: `${configurationContent.meaning} ${distanceContent.meaning}`,
+    conclusion: content.conclusion,
+  }, {
+    taskLabel: taskContent.label,
+    configurationLabel: configurationContent.label,
+    distanceLabel: distanceContent.label,
+    mean: formatSigned(summary.mean),
+    positiveCount: String(summary.positiveCount),
+    measuredCount: String(summary.measuredCount),
+    strongest: names[summary.strongest.variant] || summary.strongest.variant,
+    strongestContext: compact.format(summary.strongest.context),
+    strongestMean: formatSigned(summary.strongest.mean),
+    weakest: names[summary.weakest.variant] || summary.weakest.variant,
+    weakestContext: compact.format(summary.weakest.context),
+    weakestMean: formatSigned(summary.weakest.mean),
+  });
 }
 
 function renderRetrieval(retrieval, task, configuration, distanceBucket) {
@@ -756,6 +840,9 @@ function renderRetrieval(retrieval, task, configuration, distanceBucket) {
       `${task}, and ${distanceBucket} distance.`
     : `No recipe has a supported ${labels.short} measurement for ${configuration}, ` +
       `${task}, and ${distanceBucket} distance.`);
+  if (evidenceAvailable) {
+    updateRetrievalStory(task, configuration, distanceBucket, contexts, rows);
+  }
 }
 
 async function setupRetrieval() {

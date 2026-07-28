@@ -241,6 +241,8 @@
       "driver": "The probability-weighted key lies [[meanDistance]] tokens behind its query on average. Changing the layer or head reveals whether that concentration is shared or specialized.",
       "tradeoffHeading": "How the architecture shapes it",
       "conclusion": "[[selectionMeaning]] The map describes one frozen 64-token sample; it does not prove that the model retrieves facts or reasons correctly.",
+      "selectionMean": "The mean combines all heads and can hide specialized behavior; choose one head to inspect that variation.",
+      "selectionHead": "This single head may specialize; compare it with Mean before treating it as representative of the layer.",
       "unsupportedTitle": "[[variant]] has no conventional pairwise attention map",
       "unsupportedGraph": "[[reason]] The interface reports this as unsupported instead of manufacturing a misleading heatmap.",
       "unsupportedDriver": "Causal linear attention summarizes the prefix in running statistics. Its state can be inspected, but it is not a matrix of query-to-key softmax probabilities.",

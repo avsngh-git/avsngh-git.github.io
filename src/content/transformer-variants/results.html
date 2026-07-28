@@ -328,6 +328,7 @@
     {
       "title": "[[taskLabel]] · [[configurationLabel]] · [[distanceLabel]]",
       "graph": "The heatmap compares a fact-bearing prompt with the same prompt after removing the fact. Across [[measuredCount]] selected cells, mean answer-evidence lift is [[mean]] and [[positiveCount]] cells are positive.",
+      "taskHeading": "What this task asks",
       "driverHeading": "What the selected cells show",
       "driver": "[[strongest]] at [[strongestContext]] tokens has the strongest lift, [[strongestMean]]. [[weakest]] at [[weakestContext]] tokens has the weakest, [[weakestMean]].",
       "tradeoffHeading": "What these controls change",
@@ -389,6 +390,7 @@
         <h3 data-story="title">Loading selected retrieval evidence…</h3>
         <p data-story="graph"></p>
         <div class="tvc-option-story-grid">
+          <article><h4 data-story="task-heading"></h4><p data-story="task"></p></article>
           <article><h4 data-story="driver-heading"></h4><p data-story="driver"></p></article>
           <article><h4 data-story="tradeoff-heading"></h4><p data-story="tradeoff"></p></article>
         </div>
