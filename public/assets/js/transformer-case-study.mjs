@@ -926,6 +926,38 @@ function meanAndStd(values) {
   return { mean, std };
 }
 
+function formatPercent(value) {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function updateRoutingStory(variant, layer, seedCount, utilization) {
+  const content = readStoryContent("routing-story-content");
+  const variantContent = content.variants?.[variant];
+  if (!variantContent || !utilization) return;
+  updateOptionStory("routing-story", {
+    eyebrow: `${names[variant] || variant} · layer ${layer}`,
+    title: variantContent.title,
+    graph: content.graph,
+    driverHeading: content.driverHeading,
+    driver: content.driver,
+    tradeoffHeading: content.tradeoffHeading,
+    tradeoff: variantContent.tradeoff,
+    conclusion: content.conclusion,
+  }, {
+    variant: names[variant] || variant,
+    layer: String(layer),
+    seedCount: String(seedCount),
+    mostExpert: String(utilization.mostUsed.expert),
+    mostShare: formatPercent(utilization.mostUsed.mean),
+    leastExpert: String(utilization.leastUsed.expert),
+    leastShare: formatPercent(utilization.leastUsed.mean),
+    spread: (utilization.spread * 100).toFixed(1),
+    entropy: typeof utilization.normalizedEntropy === "number"
+      ? `${(utilization.normalizedEntropy * 100).toFixed(1)}% of maximum`
+      : "unavailable",
+  });
+}
+
 function renderRoutingUtilization(routing, variant, layer) {
   const container = root.querySelector("#routing-utilization-chart");
   const status = root.querySelector("#routing-status");
@@ -958,13 +990,19 @@ function renderRoutingUtilization(routing, variant, layer) {
   const entropies = runs
     .map((run) => run.router_entropy?.[layer])
     .filter((value) => typeof value === "number");
+  const maximum = runs[0].maximum_router_entropy;
+  const utilization = summarizeRoutingUtilization(
+    seedValues,
+    entropies,
+    maximum,
+  );
   if (status && entropies.length) {
     const entropy = meanAndStd(entropies);
-    const maximum = runs[0].maximum_router_entropy;
     status.textContent = `${names[variant] || variant} · layer ${layer} · ` +
       `${seedValues.length} seeds · router entropy ${entropy.mean.toFixed(3)} / ` +
       `${maximum.toFixed(3)} maximum`;
   }
+  updateRoutingStory(variant, layer, seedValues.length, utilization);
 }
 
 function renderRoutingStability(routing) {
@@ -1028,6 +1066,51 @@ async function setupRouting() {
   renderRoutingStability(routing);
 }
 
+function updateAttentionStory(variant, layer, selected, weights) {
+  const content = readStoryContent("attention-story-content");
+  const architecture = content.variants?.[variant];
+  const summary = summarizeAttentionWeights(weights);
+  if (!architecture || !summary) return;
+  const headLabel = selected === "mean" ? "mean across heads" : `head ${selected}`;
+  updateOptionStory("attention-story", {
+    eyebrow: `${names[variant] || variant} · layer ${layer}`,
+    title: content.title,
+    graph: content.graph,
+    driverHeading: content.driverHeading,
+    driver: content.driver,
+    tradeoffHeading: content.tradeoffHeading,
+    tradeoff: architecture,
+    conclusion: content.conclusion,
+  }, {
+    variant: names[variant] || variant,
+    layer: String(layer),
+    headLabel,
+    selfMass: formatPercent(summary.selfMass),
+    recentMass: formatPercent(summary.recentMass),
+    meanDistance: summary.meanBackwardDistance.toFixed(1),
+    selectionMeaning: selected === "mean"
+      ? content.selectionMean
+      : content.selectionHead,
+  });
+}
+
+function updateUnsupportedAttentionStory(variant, reason) {
+  const content = readStoryContent("attention-story-content");
+  updateOptionStory("attention-story", {
+    eyebrow: content.unsupportedEyebrow,
+    title: content.unsupportedTitle,
+    graph: content.unsupportedGraph,
+    driverHeading: content.unsupportedDriverHeading,
+    driver: content.unsupportedDriver,
+    tradeoffHeading: content.unsupportedTradeoffHeading,
+    tradeoff: content.unsupportedTradeoff,
+    conclusion: content.unsupportedConclusion,
+  }, {
+    variant: names[variant] || variant,
+    reason,
+  });
+}
+
 async function setupAttention() {
   const variantSelect = root.querySelector("#attention-variant");
   const layerSelect = root.querySelector("#attention-layer");
@@ -1049,6 +1132,7 @@ async function setupAttention() {
     const label = selected === "mean" ? "mean across heads" : "head " + selected;
     status.textContent = names[payload.variant] + " · layer " + layer.layer + " · " +
       label + " · " + weights.length + " tokens";
+    updateAttentionStory(payload.variant, layer.layer, selected, weights);
     renderPlot(chart, [{
       type: "heatmap",
       z: weights,
@@ -1075,6 +1159,7 @@ async function setupAttention() {
       status.textContent = entry.reason ||
         "A pairwise attention matrix is not defined for this recipe.";
       updateChartData(chart, [], status.textContent);
+      updateUnsupportedAttentionStory(variantSelect.value, status.textContent);
       return;
     }
     status.textContent = "Loading " + names[variantSelect.value] + " attention…";

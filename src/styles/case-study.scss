@@ -812,6 +812,10 @@
   margin-top: 1rem;
 }
 
+.tvc-option-story-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
 .tvc-throughput-explanation-grid article,
 .tvc-option-story-grid article {
   padding: 1rem;
