@@ -41,7 +41,7 @@ describe("Transformer Variants case-study page", () => {
     for (const id of ["overview", "architecture", "experiments", "results", "internals"]) {
       expect(container.querySelector(`#${id}`)).toBeInTheDocument();
     }
-    expect(container.textContent).toMatch(/learned absolute positions/i);
+    expect(container.textContent).toMatch(/learned position vectors/i);
     expect(container.textContent).toMatch(
       /Ten Transformer recipes, explained before they are compared/,
     );

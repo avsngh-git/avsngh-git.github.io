@@ -17,21 +17,21 @@ const variants: Variant[] = [
     name: "Vanilla",
     role: "Classic reference",
     changes:
-      "A GPT-style decoder with learned absolute positions, full multi-head attention, LayerNorm, and a dense GELU feed-forward network.",
+      "A conventional decoder with learned position vectors, full multi-head attention, LayerNorm normalization, and a dense feed-forward network using GELU activation.",
     motivation:
       "This is the familiar reference point. It shows whether newer recipes improve on a transparent, conventional Transformer under the same training budget.",
     tradeoff:
       "Its mature dense operations are easy to optimize, but learned position vectors exist only for positions seen during training.",
     result:
       "It reached 3.9400 validation loss and led short KV-cached generation at 512.8 tokens/s. Evaluation beyond the 1K position table is correctly marked unsupported.",
-    tags: ["Learned positions", "Full attention", "Dense FFN"],
+    tags: ["Learned positions", "Full attention", "Dense feed-forward"],
   },
   {
     id: "modern",
     name: "Modern",
     role: "Dense quality baseline",
     changes:
-      "It combines rotary position embeddings (RoPE), full scaled dot-product attention, RMSNorm, and a dense SwiGLU feed-forward network.",
+      "It combines rotary position embeddings (RoPE), optimized full attention, lighter RMSNorm normalization, and a gated SwiGLU feed-forward network.",
     motivation:
       "This recipe asks how much a current dense Transformer stack improves on the classic baseline before more specialized mechanisms are introduced.",
     tradeoff:
@@ -45,7 +45,7 @@ const variants: Variant[] = [
     name: "ALiBI",
     role: "Position experiment",
     changes:
-      "It replaces position embeddings with a linear distance penalty inside attention. Different heads receive different slopes, creating local and broad distance preferences.",
+      "Attention with Linear Biases (ALiBI) replaces position embeddings with a distance penalty. Different heads receive different slopes, creating local and broad preferences.",
     motivation:
       "The test asks whether a position rule that remains mathematically unchanged at longer lengths transfers better beyond the 1K training context.",
     tradeoff:
@@ -59,7 +59,7 @@ const variants: Variant[] = [
     name: "GQA",
     role: "KV-memory experiment",
     changes:
-      "Eight query heads share two key and value head pairs. Queries remain specialized, while the stored key/value state is reduced.",
+      "Grouped-query attention (GQA) lets eight query heads share two key and value head pairs. Queries remain specialized while stored KV state is reduced.",
     motivation:
       "Grouped-query attention tests whether a smaller key-value cache can reduce parameters and memory traffic without giving up too much prediction quality.",
     tradeoff:
@@ -73,7 +73,7 @@ const variants: Variant[] = [
     name: "SWA",
     role: "Local-attention experiment",
     changes:
-      "Sliding-window attention lets each token attend only to itself and the previous 255 tokens instead of the full earlier sequence.",
+      "Sliding-window attention (SWA) lets each token attend only to itself and the previous 255 tokens instead of the full earlier sequence.",
     motivation:
       "The experiment asks how much speed and length stability a fixed local view can provide, and what is lost when distant tokens cannot be addressed directly.",
     tradeoff:
@@ -101,7 +101,7 @@ const variants: Variant[] = [
     name: "Causal linear",
     role: "Complexity experiment",
     changes:
-      "An ELU+1 feature map replaces the pairwise softmax matrix with recurrent prefix statistics stored in a fixed-size state.",
+      "A mathematical ELU+1 mapping replaces the usual all-pairs attention probabilities with running prefix statistics stored in a fixed-size state.",
     motivation:
       "The test separates attractive linear scaling on paper from the throughput and quality actually delivered by a concrete GPU implementation.",
     tradeoff:
@@ -115,7 +115,7 @@ const variants: Variant[] = [
     name: "MoE",
     role: "Conditional-capacity experiment",
     changes:
-      "Each dense feed-forward block becomes eight experts. A learned router selects two experts for each token, so only part of the stored network is active.",
+      "In this mixture of experts (MoE), each dense feed-forward block becomes eight experts. A learned router selects two for each token.",
     motivation:
       "Mixture of experts tests whether more stored, conditional capacity improves prediction when active parameters per token remain close to the dense baseline.",
     tradeoff:
@@ -135,7 +135,7 @@ const variants: Variant[] = [
     tradeoff:
       "It reduces stored experts and routing frequency, but may limit where specialization can develop across model depth.",
     result:
-      "It remained among the strongest fixed-data recipes while occupying a middle ground between dense execution and full MoE capacity.",
+      "It reached 3.7252 validation loss and 36.7K training tokens/s. Its 4K tail perplexity rose to 419.86.",
     tags: ["Alternating experts", "Top-2 routing", "Partial MoE"],
   },
   {
@@ -149,7 +149,7 @@ const variants: Variant[] = [
     tradeoff:
       "Late specialization may concentrate useful capacity, but it delays routing and cannot provide expert computation in shallow layers.",
     result:
-      "It tested a depth-specific specialization hypothesis while keeping the same controlled data, training, and evaluation protocol as the other recipes.",
+      "It reached 3.7311 validation loss and 36.5K training tokens/s. Its 4K tail perplexity rose to 432.04.",
     tags: ["Deep-layer experts", "Top-2 routing", "Partial MoE"],
   },
 ];
@@ -166,7 +166,35 @@ export function VariantExplorer() {
   };
 
   return (
-    <section className="tvc-section tvc-variant-explorer" aria-labelledby="variant-explorer-title">
+    <>
+      <section className="tvc-section tvc-reading-width">
+        <p className="tvc-section-kicker">How the recipes relate</p>
+        <h2>Three parts of the Transformer are being changed</h2>
+        <p className="tvc-lead-paragraph">
+          The names become easier to compare when they are mapped to three design
+          questions: how position is represented, how tokens exchange information,
+          and how much capacity is available to each token.
+        </p>
+        <div className="tvc-axis-list">
+          <article>
+            <span>01</span>
+            <h3>Position</h3>
+            <p>Different rules represent token order and distance.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Token interaction</h3>
+            <p>Different attention patterns create different information paths and memory costs.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Per-token capacity</h3>
+            <p>Dense networks reuse one path. MoE routes tokens through selected expert paths.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="tvc-section tvc-variant-explorer" aria-labelledby="variant-explorer-title">
       <div className="tvc-section-heading tvc-reading-width">
         <p className="tvc-section-kicker">Interactive variant guide</p>
         <h2 id="variant-explorer-title">Start with the baseline, then change one idea at a time</h2>
@@ -258,6 +286,7 @@ export function VariantExplorer() {
         Tip: use the arrow keys to move between tabs. The full component matrix follows
         below for side-by-side reference.
       </p>
-    </section>
+      </section>
+    </>
   );
 }

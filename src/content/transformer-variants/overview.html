@@ -1,13 +1,4 @@
 <section class="tvc-section tvc-overview-intro">
-  <dl class="tvc-metrics" aria-label="Experiment scale">
-    <div><dt>10</dt><dd>Transformer recipes</dd></div>
-    <div><dt>50</dt><dd>main training runs</dd></div>
-    <div><dt>500M</dt><dd>tokens per run</dd></div>
-    <div><dt>5</dt><dd>independent seeds</dd></div>
-    <div><dt>25B</dt><dd>processed tokens</dd></div>
-    <div><dt>1K → 4K</dt><dd>context test</dd></div>
-  </dl>
-
   <div class="tvc-reading-width">
     <p class="tvc-section-kicker">The motivation</p>
     <h2>“More efficient” can mean several different things</h2>
@@ -62,6 +53,19 @@
       <p>Use internal probes, routing measurements, and explicit limitations to show what each result supports—and what it does not.</p>
     </article>
   </div>
+
+  <div class="tvc-section-heading tvc-reading-width">
+    <p class="tvc-section-kicker">Experiment scale</p>
+    <h3>Enough repetition to distinguish a pattern from one lucky run</h3>
+  </div>
+  <dl class="tvc-metrics" aria-label="Experiment scale">
+    <div><dt>10</dt><dd>Transformer recipes</dd></div>
+    <div><dt>50</dt><dd>main training runs</dd></div>
+    <div><dt>500M</dt><dd>tokens per run</dd></div>
+    <div><dt>5</dt><dd>independent seeds</dd></div>
+    <div><dt>25B</dt><dd>processed tokens</dd></div>
+    <div><dt>1K → 4K</dt><dd>context test</dd></div>
+  </dl>
 </section>
 
 <section class="tvc-section tvc-reading-width">
@@ -99,6 +103,22 @@
     <div>
       <dt>Prefill and decode</dt>
       <dd>Prefill processes the input prompt. Decode generates later tokens one at a time, often reusing the KV cache.</dd>
+    </div>
+    <div>
+      <dt>Position information</dt>
+      <dd>A rule that tells the model where tokens occur and how far apart they are.</dd>
+    </div>
+    <div>
+      <dt>Normalization</dt>
+      <dd>A step that rescales internal activations to make training more stable.</dd>
+    </div>
+    <div>
+      <dt>Feed-forward network</dt>
+      <dd>The per-token computation that transforms information after attention. It is sometimes shortened to FFN.</dd>
+    </div>
+    <div>
+      <dt>Mixture of experts</dt>
+      <dd>A larger set of feed-forward networks where a router selects only a few experts for each token. It is shortened to MoE.</dd>
     </div>
   </dl>
 </section>

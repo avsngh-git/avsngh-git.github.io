@@ -1,6 +1,6 @@
 <section class="tvc-section tvc-reading-width">
   <p class="tvc-section-kicker">How to read this chapter</p>
-  <h2>The ranking changes when the resource changes</h2>
+  <h2>Different questions produce different leaders</h2>
   <p class="tvc-lead-paragraph">
     “Best model” is incomplete without naming the resource. Prediction quality,
     training time, stored parameters, KV-cached generation, prompt processing, and
@@ -16,12 +16,11 @@
 <section class="tvc-section" id="fixed-data-results">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Primary quality endpoint</p>
-    <h2>Five seeds separate a repeatable effect from a lucky initialization</h2>
+    <h2>Which recipe predicted held-out text best?</h2>
     <p>
-      Every recipe processed the same 499,974,144 training tokens per seed. Large
-      markers show the five-seed mean, open markers show the individual runs, and
-      error bars show the two-sided 95% Student-t confidence interval. Hover over any
-      point to inspect the underlying seed or aggregate.
+      Every recipe processed the same number of training tokens in five independent
+      runs. Large markers show the average result, open markers show individual runs,
+      and error bars show the range used to express uncertainty.
     </p>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="fixed-data-figure">
@@ -52,12 +51,12 @@
 <section class="tvc-section">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Training efficiency</p>
-    <h2>The same learning histories, viewed against three budgets</h2>
+    <h2>Which recipe learned fastest under different budgets?</h2>
     <p>
       Re-plotting the same checkpoints changes the denominator, not the underlying
       observations. Fixed tokens emphasizes how much a recipe learns from data;
-      wall-clock includes the implementation's real speed; estimated FLOPs emphasizes
-      modeled arithmetic. A result that survives all three views is stronger than a
+      wall-clock includes the implementation's real speed; estimated floating-point
+      operations (FLOPs) represent modeled arithmetic. A result that survives all three views is stronger than a
       result visible on only one convenient axis.
     </p>
   </div>
@@ -110,7 +109,7 @@
 <section class="tvc-section">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Pareto efficiency</p>
-    <h2>A useful frontier is more informative than a single ordered list</h2>
+    <h2>Which recipes offer a useful quality–compute trade-off?</h2>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="pareto-figure">
     <div
@@ -141,7 +140,7 @@
 <section class="tvc-section" id="long-context-results">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Long-context extrapolation</p>
-    <h2>Good 1K quality did not predict good 4K behavior</h2>
+    <h2>Which recipes remained stable beyond 1K tokens?</h2>
     <p>
       Each point scores the same final 256 targets while the visible prefix grows.
       Perplexity therefore asks whether extra context and unseen position ranges help
@@ -199,7 +198,7 @@
 <section class="tvc-section" id="retrieval-results">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Distant-information access</p>
-    <h2>Stable perplexity is not proof that a model retrieved a distant fact</h2>
+    <h2>Did stable prediction mean the model retrieved a distant fact?</h2>
     <p>
       Paired-tail perplexity measures whether the same final targets remain calibrated
       as the prefix grows. The zero-shot passkey and needle probes ask a stricter
@@ -288,7 +287,7 @@
 <section class="tvc-section" id="throughput-results">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Serving behavior</p>
-    <h2>Prompt processing and token generation are different workloads</h2>
+    <h2>Which recipes were fastest for training, prompts, and generation?</h2>
     <p>
       A <strong>key-value cache (KV cache)</strong> saves attention information from
       earlier tokens so it does not need to be recomputed after every generated token.
@@ -355,7 +354,7 @@
 <section class="tvc-section" id="all-variant-results">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Complete evidence</p>
-    <h2>All ten recipes in one sortable comparison</h2>
+    <h2>How do all ten recipes compare?</h2>
     <p>Unsupported is kept distinct from zero: it describes an interface or positional path the tested recipe did not provide.</p>
   </div>
   <div class="tvc-interactive-prompt">
