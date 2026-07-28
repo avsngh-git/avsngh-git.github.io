@@ -55,12 +55,23 @@ export function commonBudgetSnapshot(summary, axis) {
   }
   const budget = Math.min(...entries.map(([, curve]) => curve.x.at(-1)));
   const measured = entries.map(([variant, curve]) => {
-    let index = curve.x.findLastIndex((value) => value <= budget);
-    if (index < 0) index = 0;
+    let upper = curve.x.findIndex((value) => value >= budget);
+    if (upper < 0) upper = curve.x.length - 1;
+    if (upper === 0 || curve.x[upper] === budget) {
+      return {
+        variant,
+        budget,
+        loss: curve.mean[upper],
+      };
+    }
+    const lower = upper - 1;
+    const progress = (budget - curve.x[lower])
+      / (curve.x[upper] - curve.x[lower]);
     return {
       variant,
-      budget: curve.x[index],
-      loss: curve.mean[index],
+      budget,
+      loss: curve.mean[lower]
+        + progress * (curve.mean[upper] - curve.mean[lower]),
     };
   }).sort((left, right) => left.loss - right.loss);
   return {
