@@ -16,9 +16,21 @@ if (!window.Plotly) throw new Error("The local Plotly runtime was not loaded.");
 
 const Plotly = window.Plotly;
 const names = {
-  alibi: "ALiBI", gqa: "GQA", linear: "Causal linear", modern: "Modern",
-  moe: "MoE", moe_deep: "MoE deep", moe_interleaved: "MoE interleaved",
-  swa: "SWA", swa_interleaved: "SWA interleaved", vanilla: "Vanilla",
+  alibi: "ALiBI", gqa: "Grouped-Query Attention", linear: "Causal linear",
+  modern: "Modern", moe: "Mixture of Experts",
+  moe_deep: "Deep Mixture of Experts",
+  moe_interleaved: "Interleaved Mixture of Experts",
+  swa: "Sliding-Window Attention",
+  swa_interleaved: "Interleaved Sliding-Window Attention", vanilla: "Vanilla",
+};
+const shortNames = {
+  ...names,
+  gqa: "GQA",
+  moe: "MoE",
+  moe_deep: "MoE deep",
+  moe_interleaved: "MoE interleaved",
+  swa: "SWA",
+  swa_interleaved: "SWA interleaved",
 };
 const colors = {
   alibi: "#0072B2", gqa: "#56B4E9", linear: "#4D4D4D", modern: "#009E73",
@@ -271,7 +283,7 @@ function renderFixedData(summary) {
   const ordered = [...summary.variants].sort(
     (left, right) => left.fixedDataLoss.mean - right.fixedDataLoss.mean,
   );
-  const categories = ordered.map(({ variant }) => names[variant] || variant);
+  const categories = ordered.map(({ variant }) => shortNames[variant] || variant);
   const interval = ordered.map(({ fixedDataLoss }) =>
     fixedDataLoss.ci95_half_width ?? fixedDataLoss.std ?? 0);
   const aggregate = {
@@ -294,7 +306,7 @@ function renderFixedData(summary) {
     mode: "markers",
     name: "Individual seeds",
     x: ordered.flatMap(({ variant, seedLosses = [] }) =>
-      seedLosses.map(() => names[variant] || variant)),
+      seedLosses.map(() => shortNames[variant] || variant)),
     y: ordered.flatMap(({ seedLosses = [] }) => seedLosses.map(({ value }) => value)),
     customdata: ordered.flatMap(({ seedLosses = [] }) =>
       seedLosses.map(({ seed }) => seed)),
@@ -317,7 +329,7 @@ function renderLearningCurves(summary, axis) {
     (curve.seeds || []).map((seed) => ({
       type: "scatter",
       mode: "lines",
-      name: `${names[variant] || variant} · seed ${seed.seed}`,
+      name: `${shortNames[variant] || variant} · seed ${seed.seed}`,
       legendgroup: variant,
       showlegend: false,
       x: seed.x,
@@ -330,7 +342,7 @@ function renderLearningCurves(summary, axis) {
   const aggregateTraces = Object.entries(curves).map(([variant, curve]) => ({
     type: "scatter",
     mode: "lines+markers",
-    name: names[variant] || variant,
+    name: shortNames[variant] || variant,
     legendgroup: variant,
     x: curve.x,
     y: curve.mean,
@@ -397,10 +409,10 @@ function renderPareto(summary) {
       name: "Measured recipe",
       x: available.map(({ trainingFlops }) => trainingFlops),
       y: available.map(({ fixedDataLoss }) => fixedDataLoss.mean),
-      text: available.map(({ variant }) => names[variant] || variant),
+      text: available.map(({ variant }) => shortNames[variant] || variant),
       textposition: "top center",
       customdata: available.map(({ variant, activeParameters, totalParameters }) => [
-        names[variant] || variant,
+        shortNames[variant] || variant,
         activeParameters,
         totalParameters,
       ]),
@@ -435,7 +447,7 @@ function renderThroughput(summary, metric) {
     type: "bar",
     orientation: "h",
     x: series.map(({ value }) => value),
-    y: series.map(({ variant }) => names[variant] || variant),
+    y: series.map(({ variant }) => shortNames[variant] || variant),
     error_x: training ? {
       type: "data",
       array: series.map(({ variant }) =>
@@ -446,7 +458,7 @@ function renderThroughput(summary, metric) {
     } : undefined,
     marker: { color: series.map(({ variant }) => colors[variant]) },
     customdata: series.map(({ variant }) => [
-      names[variant] || variant,
+      shortNames[variant] || variant,
       byVariant[variant]?.trainingThroughput?.std ?? null,
     ]),
     hovertemplate: training
@@ -491,7 +503,7 @@ function renderContextChart(summary, metric) {
     return [{
       type: "scatter",
       mode: "lines+markers",
-      name: names[variant] || variant,
+      name: shortNames[variant] || variant,
       x: available.map(({ context }) => context),
       y: available.map(({ mean }) => mean),
       error_y: {
@@ -580,7 +592,7 @@ function renderRetrieval(retrieval, task, metric, configuration, distanceBucket)
       return [{
         type: "scatter",
         mode: "lines+markers",
-        name: names[variant] || variant,
+        name: shortNames[variant] || variant,
         x: available.map(({ context }) => context),
         y: available.map(({ estimate }) => estimate.summary.mean),
         error_y: {
@@ -670,7 +682,7 @@ function renderInternals(internals, metric, field, containerId, yTitle) {
     return [{
       type: "scatter",
       mode: "lines+markers",
-      name: names[variant] || variant,
+      name: shortNames[variant] || variant,
       x: values.map((_, index) => index),
       y: values,
       line: { color: colors[variant], width: 2 },
@@ -772,7 +784,7 @@ function renderRoutingStability(routing) {
     return [{
       type: "scatter",
       mode: "lines+markers",
-      name: names[variant] || variant,
+      name: shortNames[variant] || variant,
       x: points.map(([layer]) => Number(layer)),
       y: points.map(([, summary]) => summary.mean),
       error_y: {
@@ -789,7 +801,7 @@ function renderRoutingStability(routing) {
     }];
   });
   renderPlot(container, traces, {
-    xaxis: { title: "MoE layer", dtick: 1, automargin: true },
+    xaxis: { title: "Expert layer", dtick: 1, automargin: true },
     yaxis: {
       title: "Aligned cross-seed top-1 routing agreement",
       range: [0, 1],

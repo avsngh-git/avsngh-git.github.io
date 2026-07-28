@@ -113,7 +113,9 @@ test("case-study controls update every interactive evidence view", async ({
   );
 
   await page.locator("#routing-variant").selectOption("moe_deep");
-  await expect(page.locator("#routing-status")).toContainText("MoE deep");
+  await expect(page.locator("#routing-status")).toContainText(
+    "Deep Mixture of Experts",
+  );
   const lastLayer = await page
     .locator("#routing-layer option")
     .last()

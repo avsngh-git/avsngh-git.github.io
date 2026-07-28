@@ -1,4 +1,4 @@
-export const CASE_STUDY_ASSET_VERSION = "react-migration-v1";
+export const CASE_STUDY_ASSET_VERSION = "reader-first-v2";
 
 export const caseStudyAssets = {
   summary: "/assets/data/transformer-variants/summary.json",
