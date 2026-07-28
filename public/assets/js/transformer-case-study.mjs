@@ -569,70 +569,122 @@ function retrievalEstimate(payload, metric, distanceBucket) {
   return { summary: measurements?.[metric], distance: `${Number(distance)} tokens` };
 }
 
-function renderRetrieval(retrieval, task, metric, configuration, distanceBucket) {
-  const container = root.querySelector("#retrieval-chart");
-  if (!container) return;
-  const traces = Object.entries(retrieval.aggregate || {}).flatMap(
+function retrievalHeatmapRows(
+  retrieval,
+  task,
+  metric,
+  configuration,
+  distanceBucket,
+) {
+  const contexts = retrieval.settings?.context_lengths || [];
+  const rows = Object.entries(retrieval.aggregate || {}).flatMap(
     ([variant, configurations]) => {
       const points = retrievalConfiguration(
         variant,
         configurations,
         configuration,
       )?.[task] || {};
-      const available = Object.entries(points)
-        .map(([context, payload]) => ({
-          context: Number(context),
-          payload,
-          estimate: retrievalEstimate(payload, metric, distanceBucket),
-        }))
-        .filter(({ payload, estimate }) => ["ok", "partial"].includes(payload.status)
-          && typeof estimate.summary?.mean === "number")
-        .sort((left, right) => left.context - right.context);
-      if (!available.length) return [];
-      return [{
-        type: "scatter",
-        mode: "lines+markers",
-        name: shortNames[variant] || variant,
-        x: available.map(({ context }) => context),
-        y: available.map(({ estimate }) => estimate.summary.mean),
-        error_y: {
-          type: "data",
-          array: available.map(({ estimate }) => estimate.summary.std ?? 0),
-          visible: true,
-          width: 3,
-          thickness: 1,
-        },
-        line: { color: colors[variant], width: 2 },
-        marker: { color: colors[variant], size: 7 },
-        customdata: available.map(({ estimate }) => [
-          estimate.summary.n,
-          estimate.distance,
-        ]),
-        hovertemplate: "%{fullData.name}<br>context: %{x:,} tokens<br>mean: %{y:.4f}" +
-          "<br>distance: %{customdata[1]}<br>n=%{customdata[0]}<extra></extra>",
-      }];
+      const cells = contexts.map((context) => {
+        const payload = points[String(context)];
+        const estimate = retrievalEstimate(payload, metric, distanceBucket);
+        const supported = ["ok", "partial"].includes(payload?.status)
+          && typeof estimate.summary?.mean === "number";
+        return supported
+          ? {
+            mean: estimate.summary.mean,
+            std: estimate.summary.std,
+            n: estimate.summary.n,
+            distance: estimate.distance,
+            ci95Low: estimate.summary.ci95_low,
+            ci95High: estimate.summary.ci95_high,
+          }
+          : null;
+      });
+      return cells.some(Boolean) ? [{ variant, cells }] : [];
     },
   );
-  const labels = {
-    accuracy: "Exact top-1 accuracy",
-    top5_accuracy: "Exact top-5 accuracy",
-    mean_expected_probability: "Expected answer-token probability",
-    mean_negative_log_likelihood: "Answer-token negative log-likelihood",
-  };
+  return { contexts, rows };
+}
+
+function renderRetrieval(retrieval, task, configuration, distanceBucket) {
+  const container = root.querySelector("#retrieval-chart");
+  if (!container) return;
+  let evidenceAvailable = Number(retrieval.schema_version) >= 2;
+  let metric = evidenceAvailable
+    ? "mean_answer_evidence"
+    : "mean_negative_log_likelihood";
+  let heatmap = retrievalHeatmapRows(
+    retrieval,
+    task,
+    metric,
+    configuration,
+    distanceBucket,
+  );
+  if (evidenceAvailable && !heatmap.rows.length) {
+    evidenceAvailable = false;
+    metric = "mean_negative_log_likelihood";
+    heatmap = retrievalHeatmapRows(
+      retrieval,
+      task,
+      metric,
+      configuration,
+      distanceBucket,
+    );
+  }
+  const { contexts, rows } = heatmap;
+  const labels = evidenceAvailable
+    ? {
+      short: "Answer-evidence lift",
+      colorbar: "Δ log p",
+      description: "Answer-evidence lift over a length-matched fact-removed control. " +
+        "Positive values mean the planted fact increased the correct answer’s probability.",
+    }
+    : {
+      short: "Answer-token NLL",
+      colorbar: "NLL",
+      description: "Answer-token negative log-likelihood: lower values indicate greater " +
+        "confidence, but do not prove that the fact was retrieved.",
+    };
+  const traces = rows.length ? [{
+    type: "heatmap",
+    name: labels.short,
+    x: contexts,
+    y: rows.map(({ variant }) => names[variant] || variant),
+    z: rows.map(({ cells }) => cells.map((cell) => cell?.mean ?? null)),
+    customdata: rows.map(({ variant, cells }) => cells.map((cell) => [
+      names[variant] || variant,
+      cell?.std ?? null,
+      cell?.n ?? null,
+      cell?.distance ?? "unsupported",
+      cell?.ci95Low ?? null,
+      cell?.ci95High ?? null,
+    ])),
+    colorscale: evidenceAvailable
+      ? [[0, "#0072B2"], [0.5, "#F4F0FC"], [1, "#D55E00"]]
+      : [[0, "#F4F0FC"], [0.5, "#A982FF"], [1, "#3F157C"]],
+    zmid: evidenceAvailable ? 0 : undefined,
+    xgap: 3,
+    ygap: 3,
+    colorbar: { title: labels.colorbar },
+    hovertemplate: "<b>%{customdata[0]}</b><br>context: %{x:,} tokens" +
+      "<br>mean: %{z:.4f}<br>seed SD: %{customdata[1]:.4f}" +
+      "<br>95% CI: [%{customdata[4]:.4f}, %{customdata[5]:.4f}]" +
+      "<br>distance: %{customdata[3]}<br>n=%{customdata[2]}<extra></extra>",
+  }] : [];
+  const description = root.querySelector("#retrieval-score-description");
+  if (description) description.textContent = labels.description;
   renderPlot(container, traces, {
     xaxis: {
       title: "Context length (tokens)",
-      tickvals: retrieval.settings?.context_lengths,
+      tickvals: contexts,
       automargin: true,
     },
     yaxis: {
-      title: labels[metric],
-      range: ["accuracy", "top5_accuracy", "mean_expected_probability"].includes(metric)
-        ? [0, 1]
-        : undefined,
+      title: "Transformer recipe",
+      autorange: "reversed",
       automargin: true,
     },
-    hovermode: "closest",
+    margin: { l: 190, r: 70, t: 30, b: 64 },
     annotations: traces.length ? [] : [{
       text: "No supported measurements for this exact configuration",
       showarrow: false,
@@ -642,31 +694,28 @@ function renderRetrieval(retrieval, task, metric, configuration, distanceBucket)
       yref: "paper",
     }],
   }, traces.length
-    ? `${traces.length} recipes have measurements for ${configuration}, ${task}, ` +
-      `${metric}, and ${distanceBucket} distance.`
-    : `No recipe has a supported measurement for ${configuration}, ${task}, ` +
-      `${metric}, and ${distanceBucket} distance.`);
+    ? `${rows.length} recipes shown in the ${labels.short} heatmap for ${configuration}, ` +
+      `${task}, and ${distanceBucket} distance.`
+    : `No recipe has a supported ${labels.short} measurement for ${configuration}, ` +
+      `${task}, and ${distanceBucket} distance.`);
 }
 
 async function setupRetrieval() {
   const chart = root.querySelector("#retrieval-chart");
   const taskSelect = root.querySelector("#retrieval-task");
-  const metricSelect = root.querySelector("#retrieval-metric");
   const configurationSelect = root.querySelector("#retrieval-configuration");
   const distanceSelect = root.querySelector("#retrieval-distance");
-  if (!chart || !taskSelect || !metricSelect || !configurationSelect || !distanceSelect) {
+  if (!chart || !taskSelect || !configurationSelect || !distanceSelect) {
     return;
   }
   const retrieval = await fetchJson(root.dataset.retrievalUrl);
   const render = () => renderRetrieval(
     retrieval,
     taskSelect.value,
-    metricSelect.value,
     configurationSelect.value,
     distanceSelect.value,
   );
   taskSelect.addEventListener("change", render);
-  metricSelect.addEventListener("change", render);
   configurationSelect.addEventListener("change", render);
   distanceSelect.addEventListener("change", render);
   render();

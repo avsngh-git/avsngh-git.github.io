@@ -360,6 +360,38 @@
   margin-top: 0;
 }
 
+.tvc-retrieval-outcome {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--tvc-border);
+  border-left: 4px solid var(--tvc-primary);
+  border-radius: var(--tvc-radius);
+  background: var(--tvc-surface);
+}
+
+.tvc-retrieval-outcome > strong {
+  color: var(--tvc-primary);
+  font-size: clamp(1.55rem, 4vw, 2.25rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tvc-retrieval-outcome h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.tvc-retrieval-outcome p {
+  margin: 0;
+  color: var(--tvc-muted);
+  font-size: 0.92rem;
+}
+
 .tvc-interpretation {
   padding: 0.75rem 0.9rem;
   background: var(--tvc-surface-strong);
@@ -1630,6 +1662,7 @@
   .tvc-glossary,
   .tvc-variant-explanation,
   .tvc-attention-controls,
+  .tvc-retrieval-outcome,
   .tvc-chapter-pager,
   .tvc-pager {
     grid-template-columns: 1fr;

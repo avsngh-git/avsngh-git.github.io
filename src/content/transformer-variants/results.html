@@ -199,19 +199,27 @@
 <section class="tvc-section" id="retrieval-results">
   <div class="tvc-section-heading tvc-reading-width">
     <p class="tvc-section-kicker">Distant-information access</p>
-    <h2>Did stable prediction mean the model retrieved a distant fact?</h2>
+    <h2>Did the planted fact change the model’s answer?</h2>
     <p>
       Paired-tail perplexity measures whether the same final targets remain calibrated
       as the prefix grows. The zero-shot passkey and needle probes ask a stricter
-      question: can the model place probability on a specific answer introduced at a
-      controlled distance? No task-specific fine-tuning is used. Exact top-1/top-5
-      accuracy is shown alongside answer-token probability and negative log-likelihood
-      so floor effects remain visible rather than being hidden.
+      question: does a specific answer introduced at a controlled distance affect the
+      next-token prediction? No task-specific fine-tuning is used.
     </p>
+  </div>
+  <div class="tvc-retrieval-outcome tvc-reading-width" role="status">
+    <strong>0 / 10,500</strong>
+    <div>
+      <h3>No exact retrieval successes</h3>
+      <p>
+        The correct answer never reached rank 1 or the top 5 in any evaluated prompt.
+        This is a measured negative result, not a broken or empty chart.
+      </p>
+    </div>
   </div>
   <div class="tvc-interactive-prompt">
     <span class="tvc-prompt-icon" aria-hidden="true">⌁</span>
-    <div><strong>Interactive retrieval diagnostic</strong><p>Switch the task and scoring rule; hover to inspect five-seed uncertainty at each context length.</p></div>
+    <div><strong>Interactive answer-confidence diagnostic</strong><p>Switch the task, positional setting, and fact distance. Each heatmap cell compares one recipe and context length.</p></div>
   </div>
   <div class="tvc-control-panel tvc-attention-controls">
     <label>Choose task
@@ -234,39 +242,33 @@
         <option value="far">Farthest distance</option>
       </select>
     </label>
-    <label>Choose score
-      <select id="retrieval-metric">
-        <option value="accuracy">Exact top-1 accuracy</option>
-        <option value="top5_accuracy">Exact top-5 accuracy</option>
-        <option value="mean_expected_probability">Answer-token probability</option>
-        <option value="mean_negative_log_likelihood">Answer-token NLL</option>
-      </select>
-    </label>
   </div>
   <figure class="tvc-figure tvc-wide-figure" id="retrieval-figure">
+    <p id="retrieval-score-description" class="tvc-status">
+      Answer-evidence lift over a length-matched fact-removed control. Positive values
+      mean the planted fact increased the correct answer’s probability.
+    </p>
     <div
       id="retrieval-chart"
       class="tvc-plotly-chart"
       role="img"
-      aria-label="Interactive zero-shot passkey and needle retrieval by context length"
+      aria-label="Interactive heatmap of answer-token evidence by Transformer recipe and context length"
     ><p class="tvc-loading">Loading five-seed retrieval probes…</p></div>
     <figcaption class="figure-interpretation">
-      <h3>What this adds to the long-context claim</h3>
+      <h3>Confidence is not the same as retrieval</h3>
       <p>
-        The result is a useful negative control: exact top-1 and top-5 accuracy are
-        zero for every supported recipe, context length, task, distance, and RoPE
-        base. The larger 100,000 base does not rescue exact retrieval. Answer-token
-        probabilities remain visible so the floor is auditable, but they stay near
-        vocabulary-scale prior probabilities and do not show a consistent
-        distance-response pattern. This experiment therefore supports no claim of
-        usable zero-shot distant-fact retrieval at this model scale.
+        Each heatmap cell shows answer-evidence lift: the correct answer’s
+        log-probability with the planted fact minus its log-probability in an otherwise
+        matched prompt where that fact is removed. Positive values mean that including
+        the fact increased evidence for the answer; zero means that it made no
+        measurable difference.
       </p>
       <p>
-        A flat perplexity curve can result from ignoring distant context, especially
-        for a local-attention model. Retrieval accuracy and answer probability test
-        whether usable information actually travels from the injected fact to the
-        prediction position. Results are separated by task and context so a single
-        average cannot conceal a distance failure.
+        Across 10,500 paired prompts, 8,053 have positive evidence and the mean lift is
+        0.143. The mean weakens from 0.248 at 512 tokens to 0.042 at 4K. The models
+        therefore show some distributional sensitivity to the planted fact, but never
+        enough to put the answer in the top 5. This is evidence of influence, not
+        usable exact retrieval.
       </p>
       <p>
         The positional selector is a no-training intervention. It changes only the
@@ -279,7 +281,8 @@
         These are synthetic diagnostics on approximately 50M-active-parameter,
         non-instruction-tuned language models. Failure does not prove the architecture
         can never retrieve; success does not establish broad long-document reasoning.
-        The figure supports only zero-shot access under the displayed protocol.
+        The current exact result supports no claim of usable zero-shot distant-fact
+        retrieval under the displayed protocol.
       </p>
     </figcaption>
   </figure>

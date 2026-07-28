@@ -16,7 +16,7 @@
   },
   "provenance": {
     "repository": "https://github.com/avsngh-git/TransformerVariants",
-    "commit": "863f4e0",
+    "commit": "ef660ee",
     "hardware": "NVIDIA L4-24Q",
     "evaluationSchemaVersion": 2,
     "benchmarkSchemaVersion": 3,
@@ -56,12 +56,12 @@
     "trainingManifestSha256": "e0f42971f6d095657f163d5d562b586b5ce952c42c5e20912446a189bfac478c",
     "datasetManifestSha256": "d3edf8d608be5cb5d83b550fcae2fa9fae95ab8897cbbc0810a5b52aebfebde8",
     "datasetInventorySha256": "dd29653a263eb40347c76536773cc60806e492a53e6b43aadfa7428cce716efa",
-    "evaluationExportRevision": "863f4e0",
+    "evaluationExportRevision": "ef660ee",
     "evaluationExportWorktreeDirty": true,
     "sourceArtifactSha256": {
       "metrics": "6d623381f836bdc8b00a7b725480d53471901b605ff404899d4362e6a1cfabcb",
       "benchmarks": "cb9ba62f854de4f2d8668f1d96c49eeeff856cd040bf5e29427b95e3155bec98",
-      "retrieval": "3a2035a0ec9c2e0bd36e45b4620c886ec5ee1c15211dd1c733220096102e1ac3",
+      "retrieval": "70319451b75d2dfe2d5584c05de49b8f959088b7c80cab96f42a91f9b10e3e74",
       "moeRouting": "4167ada3b0235e4da157c71b6cbe8863595da0c864a1a571d219f28dff8283f0",
       "modelInternals": "bd27074893db57392c97d30be219fa50c3cb0ed3f864f48925bedceaa0b4745f",
       "siteAssetManifest": "0984035bec5ec0b3f435ada80986e1df4e115e967990c9ff4cb5f9b17741d2f1",

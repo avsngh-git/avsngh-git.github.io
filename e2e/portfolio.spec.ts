@@ -103,13 +103,13 @@ test("case-study controls update every interactive evidence view", async ({
     .locator("#retrieval-configuration")
     .selectOption("rope_theta_100000");
   await page.locator("#retrieval-distance").selectOption("far");
-  await page
-    .locator("#retrieval-metric")
-    .selectOption("mean_negative_log_likelihood");
   await expect(
     page.locator("#retrieval-chart-accessible-data-summary"),
   ).toContainText(
-    "rope_theta_100000, needle, mean_negative_log_likelihood, and far distance",
+    "Answer-evidence lift heatmap for rope_theta_100000, needle, and far distance",
+  );
+  await expect(page.locator("#retrieval-score-description")).toContainText(
+    "Positive values mean the planted fact increased",
   );
 
   await page.locator("#routing-variant").selectOption("moe_deep");
