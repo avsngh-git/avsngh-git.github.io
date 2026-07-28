@@ -314,6 +314,50 @@ test("attention asset failure replaces stale controls and explanation", async ({
   await expect(page.locator("#attention-chart")).toBeHidden();
 });
 
+test("one failed data source does not invalidate independent stories", async ({
+  page,
+}) => {
+  await page.route("**/moe_routing.json*", (route) => route.abort());
+  await page.goto("/projects/transformer-variants/");
+  await expect(page.locator("#routing-story [data-story='title']")).toHaveText(
+    "The explanation could not be updated",
+  );
+  await expect(page.locator("#routing-variant")).toBeDisabled();
+  await expect(page.locator("#learning-story [data-story='title']")).toContainText(
+    "Mixture of Experts",
+  );
+  await expect(page.locator("#learning-story [data-story='title']")).not.toContainText(
+    "could not be updated",
+  );
+});
+
+test("empty retrieval selections replace the previous narrative", async ({ page }) => {
+  await page.route("**/retrieval.json*", async (route) => {
+    const response = await route.fetch();
+    const retrieval = await response.json();
+    retrieval.aggregate = {};
+    await route.fulfill({ response, json: retrieval });
+  });
+  await page.goto("/projects/transformer-variants/");
+  await expect(page.locator("#retrieval-story [data-story='graph']")).toContainText(
+    "No recipe has a supported measurement",
+  );
+  await expect(page.locator("#retrieval-story [data-story='driver']")).toContainText(
+    "not converted into zeros",
+  );
+});
+
+test("no-JavaScript fallback hides unresolved story shells", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/projects/transformer-variants/");
+  await expect(
+    page.getByRole("heading", { name: "JavaScript is required to view this portfolio" }),
+  ).toBeVisible();
+  await expect(page.locator(".tvc-option-story")).toHaveCount(0);
+  await context.close();
+});
+
 test("legacy chapter routes redirect to matching consolidated anchors", async ({
   page,
 }) => {

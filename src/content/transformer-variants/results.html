@@ -1,3 +1,15 @@
+<script type="application/json" id="story-failure-content">
+  {
+    "eyebrow": "Interactive view unavailable",
+    "title": "The explanation could not be updated",
+    "graph": "[[message]]",
+    "conclusion": "Reload the page to try again. The surrounding static findings remain available.",
+    "chart": "Interactive data could not be loaded: [[message]]",
+    "status": "Interactive view unavailable: [[message]]"
+  }
+</script>
+<noscript><style>.tvc-option-story { display: none; }</style></noscript>
+
 <section class="tvc-section tvc-reading-width">
   <p class="tvc-section-kicker">How to read this chapter</p>
   <h2>Different questions produce different leaders</h2>
@@ -385,6 +397,14 @@
         "groupsHeading": "How every recipe compares",
         "groups": "Averaging the displayed context lengths gives this ranking from lower to higher negative log-likelihood: [[variantRanking]].",
         "conclusion": "Confidence alone cannot show that the planted fact caused the answer. Exact top-k outcomes remain the stricter retrieval test."
+      },
+      "empty": {
+        "graph": "No recipe has a supported measurement for this exact task, positional setting, and fact distance.",
+        "driverHeading": "Why the panel is empty",
+        "driver": "Unsupported or missing measurements are not converted into zeros because that would imply evidence that was never observed.",
+        "groupsHeading": "What can still be compared",
+        "groups": "Choose another task, positional setting, or distance to display only combinations backed by frozen measurements.",
+        "conclusion": "An empty view is a data-availability result, not evidence that every recipe performed equally."
       },
       "tasks": {
         "passkey": {

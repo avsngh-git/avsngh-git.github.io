@@ -98,12 +98,43 @@ function updateOptionStory(panelId, story, values = {}) {
 }
 
 function showStoryFailure(panelId, message) {
-  updateOptionStory(panelId, storyView({}, {
-    eyebrow: "Interactive view unavailable",
-    title: "The explanation could not be updated",
-    graph: message,
-    conclusion: "Reload the page to try again. The surrounding static findings remain available.",
-  }));
+  const content = readStoryContent("story-failure-content");
+  updateOptionStory(panelId, storyView(content), { message });
+}
+
+function failureText(field, message) {
+  const content = readStoryContent("story-failure-content");
+  return fillTemplate(content[field] || "[[message]]", { message });
+}
+
+function reportSetupFailure(error, {
+  chartIds = [],
+  storyIds = [],
+  controlSelectors = [],
+  statusId,
+} = {}) {
+  const message = error instanceof Error ? error.message : String(error);
+  for (const id of chartIds) {
+    const chart = root.querySelector(`#${id}`);
+    const loading = chart?.querySelector(".tvc-loading");
+    if (loading) loading.textContent = failureText("chart", message);
+  }
+  for (const id of storyIds) showStoryFailure(id, message);
+  for (const selector of controlSelectors) {
+    for (const control of root.querySelectorAll(selector)) {
+      control.disabled = true;
+    }
+  }
+  const status = statusId ? root.querySelector(`#${statusId}`) : null;
+  if (status) status.textContent = failureText("status", message);
+}
+
+async function runSetup(setup, failureOptions) {
+  try {
+    await setup();
+  } catch (error) {
+    reportSetupFailure(error, failureOptions);
+  }
 }
 
 function chartTheme(extra = {}) {
@@ -761,7 +792,26 @@ function updateRetrievalStory(
   const taskContent = content.tasks?.[task];
   const configurationContent = content.configurations?.[configuration];
   const distanceContent = content.distances?.[distanceBucket];
-  if (!summary || !taskContent || !configurationContent || !distanceContent) return;
+  if (!taskContent || !configurationContent || !distanceContent) return;
+  const commonValues = {
+    taskLabel: taskContent.label,
+    configurationLabel: configurationContent.label,
+    distanceLabel: distanceContent.label,
+  };
+  if (!summary) {
+    updateOptionStory("retrieval-story", storyView(content, {
+      eyebrow: taskContent.label,
+      graph: content.empty?.graph,
+      task: taskContent.meaning,
+      driverHeading: content.empty?.driverHeading,
+      driver: content.empty?.driver,
+      tradeoff: `${configurationContent.meaning} ${distanceContent.meaning}`,
+      groupsHeading: content.empty?.groupsHeading,
+      groups: content.empty?.groups,
+      conclusion: content.empty?.conclusion,
+    }), commonValues);
+    return;
+  }
   const metricContent = evidenceAvailable ? content : content.fallback;
   const best = evidenceAvailable ? summary.strongest : summary.weakest;
   const worst = evidenceAvailable ? summary.weakest : summary.strongest;
@@ -784,9 +834,7 @@ function updateRetrievalStory(
     groups: metricContent.groups,
     conclusion: metricContent.conclusion,
   }), {
-    taskLabel: taskContent.label,
-    configurationLabel: configurationContent.label,
-    distanceLabel: distanceContent.label,
+    ...commonValues,
     mean: formatMetric(summary.mean),
     positiveCount: String(summary.positiveCount),
     measuredCount: String(summary.measuredCount),
@@ -1288,7 +1336,7 @@ async function setupAttention() {
       if (currentRequest !== requestId || requestedVariant !== variantSelect.value) return;
       payload = null;
       const reason = error instanceof Error ? error.message : String(error);
-      status.textContent = "Attention explorer unavailable: " + reason;
+      status.textContent = failureText("status", reason);
       updateChartData(chart, [], status.textContent);
       updateAttentionFailureStory(requestedVariant, reason);
     }
@@ -1299,7 +1347,7 @@ async function setupAttention() {
   await loadVariant();
 }
 
-async function initialize() {
+async function setupSummaryViews() {
   if (root.querySelector(
     "#variant-comparison, #fixed-data-chart, #learning-curves-chart, " +
     "#pareto-chart, #throughput-chart, #context-chart",
@@ -1321,28 +1369,54 @@ async function initialize() {
       );
     }
   }
+}
+
+async function initialize() {
   await Promise.all([
-    setupInternals(),
-    setupAttention(),
-    setupRetrieval(),
-    setupRouting(),
+    runSetup(setupSummaryViews, {
+      chartIds: [
+        "fixed-data-chart",
+        "learning-curves-chart",
+        "pareto-chart",
+        "throughput-chart",
+        "context-chart",
+      ],
+      storyIds: ["learning-story", "context-story"],
+      controlSelectors: [
+        "[data-learning-axis]",
+        "[data-throughput-metric]",
+        "#context-metric",
+      ],
+    }),
+    runSetup(setupInternals, {
+      chartIds: ["stable-rank-chart", "cka-chart"],
+    }),
+    runSetup(setupAttention, {
+      chartIds: ["attention-chart"],
+      storyIds: ["attention-story"],
+      controlSelectors: [
+        "#attention-variant",
+        "#attention-layer",
+        "#attention-head",
+      ],
+      statusId: "attention-status",
+    }),
+    runSetup(setupRetrieval, {
+      chartIds: ["retrieval-chart"],
+      storyIds: ["retrieval-story"],
+      controlSelectors: [
+        "#retrieval-task",
+        "#retrieval-configuration",
+        "#retrieval-distance",
+      ],
+    }),
+    runSetup(setupRouting, {
+      chartIds: ["routing-utilization-chart", "routing-stability-chart"],
+      storyIds: ["routing-story"],
+      controlSelectors: ["#routing-variant", "#routing-layer"],
+      statusId: "routing-status",
+    }),
   ]);
 }
 
-initialize().catch((error) => {
-  const message = error instanceof Error ? error.message : String(error);
-  for (const loading of root.querySelectorAll(".tvc-loading")) {
-    loading.textContent = "Interactive data could not be loaded: " + message;
-  }
-  const status = root.querySelector("#attention-status");
-  if (status) status.textContent = "Attention explorer unavailable: " + message;
-  for (const panelId of [
-    "learning-story",
-    "context-story",
-    "retrieval-story",
-    "routing-story",
-    "attention-story",
-  ]) {
-    showStoryFailure(panelId, message);
-  }
-});
+await initialize();
