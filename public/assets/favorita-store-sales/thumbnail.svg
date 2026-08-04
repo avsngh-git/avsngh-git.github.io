@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Favorita retail forecasting pipeline</title>
+  <desc id="desc">A portfolio thumbnail showing retail data moving through lag features and temporal validation into forecast artifacts.</desc>
+  <rect width="1200" height="675" fill="#0d1116"/>
+  <circle cx="1030" cy="80" r="220" fill="#6f2cff" opacity=".16"/>
+  <text x="72" y="92" fill="#b798ff" font-family="monospace" font-size="22" letter-spacing="4">RETAIL FORECASTING / FAVORITA</text>
+  <text x="72" y="178" fill="#f8f9fa" font-family="system-ui, sans-serif" font-size="54" font-weight="700">From notebook</text>
+  <text x="72" y="240" fill="#f8f9fa" font-family="system-ui, sans-serif" font-size="54" font-weight="700">to inspectable system</text>
+  <g font-family="monospace" font-size="18">
+    <rect x="72" y="342" width="220" height="112" rx="6" fill="#171d25" stroke="#6f2cff"/>
+    <text x="98" y="386" fill="#b798ff">3M rows</text><text x="98" y="418" fill="#aab1ba">messy demand data</text>
+    <path d="M310 398h70" stroke="#b798ff" stroke-width="3"/><path d="m368 386 18 12-18 12" fill="none" stroke="#b798ff" stroke-width="3"/>
+    <rect x="400" y="342" width="220" height="112" rx="6" fill="#171d25" stroke="#6f2cff"/>
+    <text x="426" y="386" fill="#b798ff">lag features</text><text x="426" y="418" fill="#aab1ba">no target leakage</text>
+    <path d="M638 398h70" stroke="#b798ff" stroke-width="3"/><path d="m696 386 18 12-18 12" fill="none" stroke="#b798ff" stroke-width="3"/>
+    <rect x="728" y="342" width="220" height="112" rx="6" fill="#171d25" stroke="#6f2cff"/>
+    <text x="754" y="386" fill="#b798ff">16-day holdout</text><text x="754" y="418" fill="#aab1ba">RMSLE evidence</text>
+    <path d="M966 398h70" stroke="#b798ff" stroke-width="3"/><path d="m1024 386 18 12-18 12" fill="none" stroke="#b798ff" stroke-width="3"/>
+    <rect x="72" y="520" width="976" height="2" fill="#6f2cff" opacity=".5"/>
+    <text x="72" y="574" fill="#aab1ba">seasonal baseline</text><text x="365" y="574" fill="#aab1ba">linear lag model</text><text x="658" y="574" fill="#aab1ba">LightGBM history</text><text x="930" y="574" fill="#b798ff">artifacts</text>
+  </g>
+</svg>

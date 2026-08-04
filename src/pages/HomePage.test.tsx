@@ -40,6 +40,11 @@ describe("portfolio homepage", () => {
         name: /read transformer variants case study/i,
       }),
     ).toHaveAttribute("href", "/projects/transformer-variants/");
+    expect(
+      within(projects).getByRole("link", {
+        name: /read favorita store sales forecasting case study/i,
+      }),
+    ).toHaveAttribute("href", "/projects/favorita-store-sales/");
   });
 
   it("toggles theme through an accessible navigation control", async () => {

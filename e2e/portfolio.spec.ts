@@ -69,6 +69,24 @@ test("case-study route initializes frozen interactive evidence", async ({ page }
   );
 });
 
+test("Favorita route presents the complete narrative and evidence figures", async ({
+  page,
+}) => {
+  await page.goto("/projects/favorita-store-sales/");
+
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Favorita Store Sales Forecasting",
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("navigation", { name: /Favorita case-study chapters/i })).toBeVisible();
+  await expect(page.getByRole("img", { name: /forecasting workflow/i })).toHaveCount(2);
+  await expect(page.getByRole("img", { name: /bar chart of/i })).toBeVisible();
+  await expect(page.getByRole("table", { name: /Recorded results/i })).toBeVisible();
+  await expect(page.getByText(/The result is useful because its provenance/)).toBeVisible();
+});
+
 test("case-study controls update every interactive evidence view", async ({
   page,
 }) => {

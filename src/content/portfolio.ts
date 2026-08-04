@@ -178,6 +178,19 @@ export const portfolio = {
       ],
     },
     {
+      title: "Favorita Store Sales Forecasting",
+      description:
+        "A code-first retail forecasting case study that turns a competition notebook into a testable workflow with temporal validation, lag features, and auditable artifacts.",
+      image: "/assets/favorita-store-sales/thumbnail.svg",
+      imageAlt:
+        "Forecasting pipeline from messy retail data through lag features and temporal validation to benchmark artifacts",
+      href: "/projects/favorita-store-sales/",
+      sourceUrl: "https://github.com/avsngh-git/Favorita-store-sales-prediction",
+      kind: "internal",
+      actionLabel: "Read Favorita Store Sales Forecasting case study",
+      tags: ["Time series", "Feature engineering", "LightGBM", "RMSLE"],
+    },
+    {
       title: "Portfolio Website",
       description:
         "The source for this personal portfolio, migrated to a React and TypeScript application and published on GitHub Pages.",

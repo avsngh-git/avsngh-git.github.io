@@ -1,10 +1,14 @@
-import { legacyRedirects, resolvePage } from "./routes";
+import { FAVORITA_CASE_STUDY_PATH, legacyRedirects, resolvePage } from "./routes";
 
 describe("public routes", () => {
   it("resolves the homepage and dedicated case-study route", () => {
     expect(resolvePage("/")).toBe("home");
     expect(resolvePage("/projects/transformer-variants")).toBe("case-study");
     expect(resolvePage("/projects/transformer-variants/")).toBe("case-study");
+    expect(resolvePage(FAVORITA_CASE_STUDY_PATH)).toBe("favorita-case-study");
+    expect(resolvePage("/projects/favorita-store-sales")).toBe(
+      "favorita-case-study",
+    );
   });
 
   it("maps every retired Jekyll route to a stable destination", () => {

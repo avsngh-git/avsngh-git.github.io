@@ -12,6 +12,11 @@ const CaseStudyPage = lazy(async () => {
   return { default: module.CaseStudyPage };
 });
 
+const FavoritaCaseStudyPage = lazy(async () => {
+  const module = await import("./pages/FavoritaCaseStudyPage");
+  return { default: module.FavoritaCaseStudyPage };
+});
+
 function LoadingPage() {
   return (
     <main className="route-loading" aria-live="polite">
@@ -39,6 +44,7 @@ export function App() {
     <Suspense fallback={<LoadingPage />}>
       {page === "home" ? <HomePage /> : null}
       {page === "case-study" ? <CaseStudyPage /> : null}
+      {page === "favorita-case-study" ? <FavoritaCaseStudyPage /> : null}
       {page === "not-found" ? <NotFoundPage /> : null}
     </Suspense>
   );

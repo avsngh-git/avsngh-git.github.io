@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 520" role="img" aria-labelledby="title desc">
+  <title id="title">Favorita forecasting workflow</title>
+  <desc id="desc">Six connected stages explain how retail data becomes an auditable forecast.</desc>
+  <rect width="1400" height="520" fill="#0d1116"/>
+  <text x="60" y="70" fill="#b798ff" font-family="monospace" font-size="18" letter-spacing="3">THE CODE-FIRST WORKFLOW</text>
+  <text x="60" y="120" fill="#f8f9fa" font-family="system-ui, sans-serif" font-size="36" font-weight="700">Each decision leaves a visible seam</text>
+  <g font-family="system-ui, sans-serif">
+    <g transform="translate(60 190)"><rect width="180" height="150" rx="8" fill="#171d25" stroke="#6f2cff"/><text x="22" y="43" fill="#b798ff" font-size="17" font-weight="700">01 / Load</text><text x="22" y="78" fill="#f8f9fa" font-size="18">train.csv</text><text x="22" y="111" fill="#aab1ba" font-size="14">schema + dates</text></g>
+    <g transform="translate(290 190)"><rect width="180" height="150" rx="8" fill="#171d25" stroke="#6f2cff"/><text x="22" y="43" fill="#b798ff" font-size="17" font-weight="700">02 / Decide</text><text x="22" y="78" fill="#f8f9fa" font-size="18">missing dates</text><text x="22" y="111" fill="#aab1ba" font-size="14">known vs unknown</text></g>
+    <g transform="translate(520 190)"><rect width="180" height="150" rx="8" fill="#171d25" stroke="#6f2cff"/><text x="22" y="43" fill="#b798ff" font-size="17" font-weight="700">03 / Build</text><text x="22" y="78" fill="#f8f9fa" font-size="18">lags + calendar</text><text x="22" y="111" fill="#aab1ba" font-size="14">shifted features</text></g>
+    <g transform="translate(750 190)"><rect width="180" height="150" rx="8" fill="#171d25" stroke="#6f2cff"/><text x="22" y="43" fill="#b798ff" font-size="17" font-weight="700">04 / Hold out</text><text x="22" y="78" fill="#f8f9fa" font-size="18">last 16 days</text><text x="22" y="111" fill="#aab1ba" font-size="14">no random split</text></g>
+    <g transform="translate(980 190)"><rect width="180" height="150" rx="8" fill="#171d25" stroke="#6f2cff"/><text x="22" y="43" fill="#b798ff" font-size="17" font-weight="700">05 / Compare</text><text x="22" y="78" fill="#f8f9fa" font-size="18">baseline + ML</text><text x="22" y="111" fill="#aab1ba" font-size="14">RMSLE</text></g>
+    <g transform="translate(1210 190)"><rect width="140" height="150" rx="8" fill="#6f2cff"/><text x="18" y="43" fill="#fff" font-size="17" font-weight="700">06 / Leave</text><text x="18" y="78" fill="#fff" font-size="18">metrics</text><text x="18" y="111" fill="#eee5ff" font-size="14">+ plots</text></g>
+  </g>
+  <g stroke="#b798ff" stroke-width="3" fill="none"><path d="M244 265h40"/><path d="m275 253 18 12-18 12"/><path d="M474 265h40"/><path d="m505 253 18 12-18 12"/><path d="M704 265h40"/><path d="m735 253 18 12-18 12"/><path d="M934 265h40"/><path d="m965 253 18 12-18 12"/><path d="M1164 265h40"/><path d="m1195 253 18 12-18 12"/></g>
+  <text x="60" y="430" fill="#aab1ba" font-family="monospace" font-size="16">The notebook remains the historical experiment; the modules make the reasoning executable.</text>
+</svg>

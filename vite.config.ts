@@ -12,13 +12,16 @@ export default defineConfig({
         transformerVariants: fileURLToPath(
           new URL("./projects/transformer-variants/index.html", import.meta.url),
         ),
+        favoritaStoreSales: fileURLToPath(
+          new URL("./projects/favorita-store-sales/index.html", import.meta.url),
+        ),
       },
     },
   },
   test: {
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
-    exclude: ["e2e/**", "test/**", "node_modules/**", "dist/**"],
+    exclude: ["_site/**", "e2e/**", "test/**", "node_modules/**", "dist/**"],
     globals: true,
     css: true,
   },

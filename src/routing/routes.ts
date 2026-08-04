@@ -1,8 +1,9 @@
 import redirectEntries from "../../redirects.json";
 
-export type Page = "home" | "case-study" | "not-found";
+export type Page = "home" | "case-study" | "favorita-case-study" | "not-found";
 
 export const CASE_STUDY_PATH = "/projects/transformer-variants/";
+export const FAVORITA_CASE_STUDY_PATH = "/projects/favorita-store-sales/";
 
 type RedirectEntry = {
   source: string;
@@ -26,5 +27,6 @@ export function resolvePage(pathname: string): Page {
   const normalized = normalizePath(pathname);
   if (normalized === "/") return "home";
   if (normalized === CASE_STUDY_PATH) return "case-study";
+  if (normalized === FAVORITA_CASE_STUDY_PATH) return "favorita-case-study";
   return "not-found";
 }
