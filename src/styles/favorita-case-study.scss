@@ -96,6 +96,11 @@
   line-height: 1.65;
 }
 
+.fsc-lede-secondary {
+  margin-top: 1rem;
+  font-size: 1rem;
+}
+
 .fsc-actions {
   display: flex;
   flex-wrap: wrap;
@@ -255,6 +260,90 @@
   margin: 3rem 0 4rem;
 }
 
+.fsc-table-wrap {
+  overflow-x: auto;
+  margin: 2rem 0 3rem;
+}
+
+.fsc-explanation-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.fsc-explanation-table caption {
+  margin-bottom: 0.8rem;
+  color: var(--fsc-muted);
+  font-size: 0.84rem;
+  text-align: left;
+}
+
+.fsc-explanation-table th,
+.fsc-explanation-table td {
+  padding: 0.9rem 0.75rem;
+  border-bottom: 1px solid var(--fsc-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.fsc-explanation-table th {
+  color: var(--fsc-accent);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fsc-explanation-table th:nth-child(1),
+.fsc-explanation-table td:nth-child(1) {
+  width: 27%;
+}
+
+.fsc-explanation-table th:nth-child(2),
+.fsc-explanation-table td:nth-child(2) {
+  width: 32%;
+}
+
+.fsc-evidence-note,
+.fsc-kaggle-result,
+.fsc-future-evidence {
+  width: min(100%, 1060px);
+  margin: 2rem auto 4rem;
+  padding: 1.35rem 1.5rem;
+  border: 1px solid var(--fsc-border);
+  background: var(--fsc-surface);
+}
+
+.fsc-evidence-note h3,
+.fsc-kaggle-result h3,
+.fsc-future-evidence h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1.3rem;
+}
+
+.fsc-evidence-note p,
+.fsc-kaggle-result p,
+.fsc-future-evidence p {
+  margin-bottom: 0;
+}
+
+.fsc-kaggle-result {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 1.5rem;
+  border-color: var(--fsc-accent);
+}
+
+.fsc-kaggle-result .fsc-kicker {
+  margin-bottom: 0.45rem;
+}
+
+.fsc-strong-note {
+  padding: 1rem 1.2rem;
+  border-left: 3px solid var(--fsc-accent);
+  background: var(--fsc-surface);
+}
+
 .fsc-result-table {
   width: 100%;
   border-collapse: collapse;
@@ -308,6 +397,13 @@
   line-height: 1.6;
 }
 
+.fsc-code-note {
+  margin: 0.9rem 0 0;
+  color: var(--fsc-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
 .fsc-link-list {
   margin: 0;
   padding-left: 1.25rem;
@@ -326,6 +422,12 @@
   padding-top: 4rem;
 }
 
+.fsc-takeaway {
+  width: 100%;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--fsc-border);
+}
+
 .fsc-footer strong {
   color: var(--fsc-accent);
 }
@@ -337,7 +439,8 @@
 
 @media (max-width: 760px) {
   .fsc-hero,
-  .fsc-code-grid {
+  .fsc-code-grid,
+  .fsc-kaggle-result {
     grid-template-columns: 1fr;
   }
 

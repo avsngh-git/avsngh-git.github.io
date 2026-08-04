@@ -84,9 +84,10 @@ test("Favorita route presents the complete narrative and evidence figures", asyn
   await expect(
     page.locator('img[src="/assets/favorita-store-sales/pipeline.svg"]'),
   ).toHaveCount(2);
-  await expect(page.getByRole("img", { name: /bar chart of/i })).toBeVisible();
+  await expect(page.getByRole("img", { name: /bar chart of same-holdout/i })).toBeVisible();
   await expect(page.getByRole("table", { name: /Recorded results/i })).toBeVisible();
-  await expect(page.getByText(/The result is useful because its provenance/)).toBeVisible();
+  await expect(page.getByText(/The largest gain came from changing the model family/)).toBeVisible();
+  await expect(page.getByText(/Historical Kaggle result: 0.38202/)).toBeVisible();
 });
 
 test("case-study controls update every interactive evidence view", async ({

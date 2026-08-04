@@ -1,18 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
-  <title id="title">Favorita forecasting benchmark</title>
-  <desc id="desc">Bar chart showing legacy notebook-recorded RMSLE values for linear regression, LightGBM ensembles, and a historical Kaggle submission.</desc>
+  <title id="title">Favorita same-holdout validation benchmark</title>
+  <desc id="desc">Bar chart showing three legacy notebook-recorded RMSLE values from the same chronological 16-day holdout: linear regression at 0.36712, a LightGBM ensemble at 0.33725, and a tuned ensemble at 0.33667.</desc>
   <rect width="1200" height="620" fill="#0d1116"/>
-  <text x="74" y="70" fill="#b798ff" font-family="monospace" font-size="18" letter-spacing="3">LEGACY NOTEBOOK EVIDENCE / LOWER IS BETTER</text>
-  <text x="74" y="116" fill="#f8f9fa" font-family="system-ui, sans-serif" font-size="32" font-weight="700">The gain came from modeling temporal structure</text>
-  <line x1="180" y1="485" x2="1110" y2="485" stroke="#66717d" stroke-width="2"/>
+  <text x="74" y="70" fill="#b798ff" font-family="monospace" font-size="18" letter-spacing="3">SAME 16-DAY HOLDOUT / LOWER IS BETTER</text>
+  <text x="74" y="116" fill="#f8f9fa" font-family="system-ui, sans-serif" font-size="32" font-weight="700">Model-family change was larger than tuning</text>
+  <line x1="180" y1="485" x2="1010" y2="485" stroke="#66717d" stroke-width="2"/>
   <line x1="180" y1="170" x2="180" y2="485" stroke="#66717d" stroke-width="2"/>
   <g fill="#77818c" font-family="monospace" font-size="14"><text x="142" y="490">0.30</text><text x="142" y="385">0.33</text><text x="142" y="280">0.36</text><text x="142" y="175">0.39</text></g>
-  <g stroke="#2c3540" stroke-width="1"><line x1="180" y1="380" x2="1110" y2="380"/><line x1="180" y1="275" x2="1110" y2="275"/><line x1="180" y1="170" x2="1110" y2="170"/></g>
+  <g stroke="#2c3540" stroke-width="1"><line x1="180" y1="380" x2="1010" y2="380"/><line x1="180" y1="275" x2="1010" y2="275"/><line x1="180" y1="170" x2="1010" y2="170"/></g>
   <g font-family="system-ui, sans-serif" text-anchor="middle">
-    <rect x="250" y="247" width="135" height="238" rx="5" fill="#8b6bd9"/><text x="317" y="225" fill="#f8f9fa" font-size="22" font-weight="700">0.36712</text><text x="317" y="525" fill="#f8f9fa" font-size="16">Linear</text><text x="317" y="548" fill="#aab1ba" font-size="14">baseline</text>
-    <rect x="470" y="350" width="135" height="135" rx="5" fill="#a982ff"/><text x="537" y="328" fill="#f8f9fa" font-size="22" font-weight="700">0.33725</text><text x="537" y="525" fill="#f8f9fa" font-size="16">LightGBM</text><text x="537" y="548" fill="#aab1ba" font-size="14">ensemble</text>
-    <rect x="690" y="352" width="135" height="133" rx="5" fill="#c9b7ff"/><text x="757" y="330" fill="#f8f9fa" font-size="22" font-weight="700">0.33667</text><text x="757" y="525" fill="#f8f9fa" font-size="16">Tuned</text><text x="757" y="548" fill="#aab1ba" font-size="14">ensemble</text>
-    <rect x="910" y="188" width="135" height="297" rx="5" fill="#525d69"/><text x="977" y="166" fill="#f8f9fa" font-size="22" font-weight="700">0.38202</text><text x="977" y="525" fill="#f8f9fa" font-size="16">Kaggle</text><text x="977" y="548" fill="#aab1ba" font-size="14">historical</text>
+    <rect x="250" y="247" width="150" height="238" rx="5" fill="#8b6bd9"/><text x="325" y="225" fill="#f8f9fa" font-size="22" font-weight="700">0.36712</text><text x="325" y="525" fill="#f8f9fa" font-size="16">Linear</text><text x="325" y="548" fill="#aab1ba" font-size="14">regression</text>
+    <rect x="520" y="350" width="150" height="135" rx="5" fill="#a982ff"/><text x="595" y="328" fill="#f8f9fa" font-size="22" font-weight="700">0.33725</text><text x="595" y="525" fill="#f8f9fa" font-size="16">LightGBM</text><text x="595" y="548" fill="#aab1ba" font-size="14">ensemble</text>
+    <rect x="790" y="352" width="150" height="133" rx="5" fill="#c9b7ff"/><text x="865" y="330" fill="#f8f9fa" font-size="22" font-weight="700">0.33667</text><text x="865" y="525" fill="#f8f9fa" font-size="16">Tuned</text><text x="865" y="548" fill="#aab1ba" font-size="14">ensemble</text>
   </g>
-  <text x="74" y="590" fill="#aab1ba" font-family="system-ui, sans-serif" font-size="14">Validation values and leaderboard score use different contexts; the rebuilt package has not re-run these claims.</text>
+  <text x="74" y="590" fill="#aab1ba" font-family="system-ui, sans-serif" font-size="14">All three values are legacy notebook evidence; the renewed package has not re-run them.</text>
 </svg>
