@@ -81,7 +81,9 @@ test("Favorita route presents the complete narrative and evidence figures", asyn
     }),
   ).toBeVisible();
   await expect(page.getByRole("navigation", { name: /Favorita case-study chapters/i })).toBeVisible();
-  await expect(page.getByRole("img", { name: /forecasting workflow/i })).toHaveCount(2);
+  await expect(
+    page.locator('img[src="/assets/favorita-store-sales/pipeline.svg"]'),
+  ).toHaveCount(2);
   await expect(page.getByRole("img", { name: /bar chart of/i })).toBeVisible();
   await expect(page.getByRole("table", { name: /Recorded results/i })).toBeVisible();
   await expect(page.getByText(/The result is useful because its provenance/)).toBeVisible();
