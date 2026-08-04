@@ -86,7 +86,18 @@ test("Favorita route presents the complete narrative and evidence figures", asyn
   ).toHaveCount(2);
   await expect(page.getByRole("img", { name: /bar chart of same-holdout/i })).toBeVisible();
   await expect(page.getByRole("table", { name: /Recorded results/i })).toBeVisible();
-  await expect(page.getByText(/The largest gain came from changing the model family/)).toBeVisible();
+  await expect(page.getByText(/The largest recorded improvement followed a bundled move/)).toBeVisible();
+  await expect(page.getByText(/may\s+therefore be optimistic/)).toBeVisible();
+  await expect(page.getByText(/MissingValuesFiller.*full-series/)).toBeVisible();
+  await expect(page.getByText(/33 family-level models/)).toBeVisible();
+  await expect(page.getByText(/output_chunk_length=1/)).toBeVisible();
+  await expect(page.getByText(/2017-07-31 through 2017-08-15/)).toBeVisible();
+  await expect(page.getByText(/not an independent final estimate/)).toBeVisible();
+  await expect(page.getByText(/untuned comparison/)).toBeVisible();
+  await expect(page.getByText(/Renewed workflow/)).toBeVisible();
+  await expect(page.getByText(/Historical notebook reproduction/)).toBeVisible();
+  await expect(page.getByText(/neither CLI command reproduces the historical scores/)).toBeVisible();
+  await expect(page.getByText(/jupyter notebook notebooks\/legacy\/store-sales-time-series-forecasting\.ipynb/)).toBeVisible();
   await expect(page.getByText(/Historical Kaggle result: 0.38202/)).toBeVisible();
 });
 

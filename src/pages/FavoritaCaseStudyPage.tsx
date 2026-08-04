@@ -97,7 +97,11 @@ export function FavoritaCaseStudyPage() {
               transform makes the metric respond more to proportional mistakes
               than to raw-unit mistakes, so the largest stores do not completely
               determine the score and zero-heavy product families remain part of
-              the evaluation.
+              the evaluation. More precisely, RMSLE is a root-mean-square error in
+              log space, averaged across the family–store forecasts. A score of
+              <code>0.33725</code> is not a 33.725% sales error, and the 8.1% figure
+              below is a relative reduction in RMSLE—not an 8.1% reduction in units
+              sold.
             </p>
             <div className="fsc-metrics" aria-label="Project scale and evaluation metrics">
               <div><strong>~3M</strong><span>historical daily records</span></div>
@@ -119,9 +123,9 @@ export function FavoritaCaseStudyPage() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Missing Christmas and New Year records</td>
-                    <td>Temporarily treated as missing and interpolated</td>
-                    <td>A closure should not be learned as permanent zero demand.</td>
+                    <td>Missing dates in the store–family grid</td>
+                    <td>After reindexing, <code>sales</code> and <code>onpromotion</code> were first filled with zero. Rows from the observed missing-date list and January 1 in 2013–2017 were then set to missing when both fields were zero, and filled by the pipeline.</td>
+                    <td>This mixes an initial zero-demand/closure assumption with later interpolation. If a zero row reflects an incomplete feed rather than a closure, the first assumption can bias the model.</td>
                   </tr>
                   <tr>
                     <td>Weekend and holiday gaps in oil prices</td>
@@ -170,47 +174,85 @@ export function FavoritaCaseStudyPage() {
                 views are combined to test whether short and long rhythms are
                 complementary.
               </p>
-              <h3>1. Linear regression: an interpretable reference point</h3>
-              <p>
-                Linear regression was the first benchmark because it tests a mostly
-                additive explanation of sales. It used lagged sales, calendar
-                variables, promotions, holidays, transactions, and store metadata.
-                If this model performed well, a more complex model would need to
-                justify its extra cost with a measurable improvement.
-              </p>
-              <h3>2. LightGBM: represent nonlinear interactions</h3>
-              <p>
-                LightGBM was selected because tree ensembles can learn threshold
-                effects and interactions. For example, a promotion can matter
-                differently by store, product family, weekday, and recent demand
-                level. A linear model would need those combinations to be encoded
-                manually; LightGBM can discover useful combinations from the data.
-              </p>
-              <h3>3. Lag windows: expose multiple demand rhythms</h3>
-              <p>
-                The notebook compared lag windows of 7, 63, 365, and 730 days.
-                The seven-day view captures weekly repetition; the longer windows
-                provide evidence about recent seasonality and annual or long-cycle
-                behavior. These lags are shifted so the target day cannot leak into
-                its own features.
-              </p>
-              <h3>4. Ensemble averaging: let complementary models vote</h3>
-              <p>
-                The forecasts from the different lag-window models were averaged.
-                This is useful only if the models make at least partly different
-                errors. In the recorded run, the best individual LightGBM
-                configuration scored <code>0.33909</code>, while the ensemble scored
-                <code>0.33725</code>. That improvement is evidence of complementarity
-                in this holdout, although no error-correlation analysis was run to
-                prove the mechanism.
-              </p>
-              <h3>5. Tuning: test whether parameters add more than complexity</h3>
+            <h3>How the historical notebook shared information across stores</h3>
+            <p>
+              Instead of fitting one model per store–family series, the notebook
+              trained 33 family-level models, each across the 54 stores. That is a
+              compromise: each model specializes in one product family while still
+              seeing enough cross-store examples to learn a useful pattern. The
+              historical pipeline also applied <code>log1p</code> to sales to reduce
+              the influence of large outliers, min–max scaling to put transformed
+              targets and covariates on comparable ranges, and one-hot encoding for
+              static store metadata so location and store type could affect the
+              forecast without pretending those categories were numeric.
+            </p>
+            <p>
+              Two forecast guards encoded business constraints. If a series had
+              zero sales for all of the previous 21 days, the notebook replaced its
+              forecast with zeros because an inactive or unavailable series should
+              not receive positive demand by default. It also clipped negative
+              predictions to zero because sales cannot be negative. These rules
+              make outputs plausible, but they are assumptions to test rather than
+              evidence of accuracy by themselves.
+            </p>
+            <h3>Forecasting one day at a time</h3>
+            <p>
+              The historical Darts models set <code>output_chunk_length=1</code>.
+              That means the 16-day horizon was generated as a recursive rollout:
+              predict one day, use that prediction as part of the next input, and
+              repeat until all 16 days are produced. One-day training is simpler
+              than learning a 16-day output directly, but recursive forecasts can
+              accumulate multi-step error. This trade-off is part of what a
+              future rerun should test.
+            </p>
+            <h3>1. Linear regression: an interpretable reference point</h3>
+            <p>
+              Linear regression was the first benchmark because it tests a mostly
+              additive explanation of sales. It used lagged sales, calendar
+              variables, promotions, holidays, transactions, and store metadata.
+              If this model performed well, a more complex model would need to
+              justify its extra cost with a measurable improvement.
+            </p>
+            <h3>2. LightGBM: represent nonlinear interactions</h3>
+            <p>
+              LightGBM was selected because tree ensembles can learn threshold
+              effects and interactions. For example, a promotion can matter
+              differently by store, product family, weekday, and recent demand
+              level. A linear model would need those combinations to be encoded
+              manually; LightGBM can discover useful combinations from the data.
+            </p>
+            <h3>3. Lag windows: expose multiple demand rhythms</h3>
+            <p>
+              The notebook compared lag windows of 7, 63, 365, and 730 days.
+              The seven-day view captures weekly repetition; the longer windows
+              provide evidence about recent seasonality and annual or long-cycle
+              behavior. These lags are shifted so the target day cannot leak into
+              its own features.
+            </p>
+            <h3>4. Ensemble averaging: let complementary models vote</h3>
+            <p>
+              The forecasts from the different lag-window models were averaged.
+              This is useful only if the models make at least partly different
+              errors. In the <em>untuned comparison</em>, the strongest individual
+              LightGBM configuration scored <code>0.33909</code>, while averaging
+              the four configurations scored <code>0.33725</code>. That is evidence
+              that this particular average was useful on this holdout; it does not
+              establish that ensembles generally beat their best individual model.
+              In the tuned comparison, the best individual scored
+              <code>0.33628</code> and the tuned ensemble scored
+              <code>0.33667</code>, so the ensemble was not the winner there. No
+              error-correlation analysis was run to explain either comparison.
+            </p>
+            <h3>5. Tuning: test whether parameters add more than complexity</h3>
               <p>
                 The final comparison varied <code>num_leaves</code>,
                 <code>learning_rate</code>, and <code>min_data_in_leaf</code> while
                 keeping the lag-window ensemble structure. This improved the
                 recorded score from <code>0.33725</code> to <code>0.33667</code>—a
-                small gain, not a major modeling breakthrough.
+                small gain, not a major modeling breakthrough. The tuned individual
+                result was <code>0.33628</code>, lower than the tuned ensemble's
+                score, which is another reason not to present averaging as a
+                generally superior technique.
               </p>
             </div>
             <figure className="fsc-figure fsc-figure-wide">
@@ -229,12 +271,20 @@ export function FavoritaCaseStudyPage() {
           <section className="fsc-section" id="results">
             <div className="fsc-reading">
               <p className="fsc-kicker">Chapter 03 · What improved</p>
-              <h2>The largest gain came from changing the model family; tuning added only a margin.</h2>
+              <h2>The largest recorded improvement followed a bundled move from linear regression to a multi-window LightGBM ensemble; tuning added only a margin.</h2>
               <p>
-                The local values below were all recorded on the same chronological
-                16-day holdout with one fold. That makes them comparable to one
-                another, even though the evaluation is weaker than repeated
-                rolling-origin validation would be.
+              The local values below were all recorded on the same chronological
+                16-day holdout with <code>folds=1</code>. The notebook passed
+                <code>drop_before="2015-01-01"</code>, so dates before that cutoff
+                were excluded from each historical model's training series. Because
+                the notebook's training data ends on 2017-08-15, this fold evaluates
+                approximately 2017-07-31 through 2017-08-15. The cutoff was used
+                partly to reduce training time across 1,782 series and partly
+                because the notebook suspected older regime differences: it notes
+                unusual zero-sales changes around 2014–2015 and near-zero
+                promotions before early 2014. These scores therefore do not use the
+                full historical period, and they are not repeated rolling-origin
+                validation.
               </p>
             </div>
             <figure className="fsc-figure fsc-benchmark-figure">
@@ -263,27 +313,54 @@ export function FavoritaCaseStudyPage() {
                   <tr>
                     <td>LightGBM ensemble</td>
                     <td>0.33725</td>
-                    <td>Down 0.02987, about an 8.1% relative reduction. Multiple lag windows and nonlinear interactions helped on this holdout.</td>
+                    <td>Down 0.02987, about an 8.1% relative reduction in RMSLE—not in units sold. This bundled move—new model family, four lag windows, and ensemble averaging—was associated with lower RMSLE on this holdout; the result cannot isolate which part mattered.</td>
                   </tr>
                   <tr>
                     <td>Tuned ensemble</td>
                     <td>0.33667</td>
-                    <td>Down another 0.00058, about a 0.17% relative reduction. Parameter tuning contributed only a marginal extra gain.</td>
+                    <td>Down another 0.00058, about a 0.17% relative reduction in RMSLE. This was the best of multiple configurations tested on the same holdout, so it is not a separate final estimate; tuning contributed only a marginal recorded gain.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
+            <div className="fsc-evidence-note fsc-evaluation-warning">
+              <h3>Evaluation caveat: preprocessing may have seen the holdout</h3>
+              <p>
+                The <code>log1p</code> transform is deterministic: it does not learn
+                holdout statistics. The min–max scaler is different—the legacy
+                notebook learned its ranges before creating the validation split,
+                so holdout values could influence those parameters. In addition,
+                <code>MissingValuesFiller</code> was applied through the full-series
+                pipeline before validation, so interpolation may also have crossed
+                the train/holdout boundary. The historical RMSLE values may
+                therefore be optimistic; they are recorded notebook evidence, not
+                a clean estimate of out-of-sample performance. A proper rerun must
+                fit learned scaling and fill missing values using the training
+                portion only, or verify that no fill crosses the boundary.
+              </p>
+            </div>
             <div className="fsc-evidence-note">
               <h3>What the improvement explanation can—and cannot—claim</h3>
               <p>
-                The results suggest that nonlinear interactions and multiple
-                temporal scales were useful: the major recorded change was from a
-                linear model to a multi-window LightGBM ensemble. They do not prove
-                that either technique caused the entire improvement, because the
-                notebook did not run ablations such as LightGBM without lags,
-                single-window versus multi-window models, or an error-correlation
-                study of the ensemble. The right conclusion is “promising evidence,”
-                not “causal proof.”
+                The major recorded change followed a bundled move from a linear
+                model to a multi-window LightGBM ensemble. Because that move also
+                changed the model family, used four lag windows, and averaged their
+                forecasts, the lower RMSLE is associated with the bundle rather than
+                attributable to one technique. The notebook did not run ablations
+                such as LightGBM without lags, single-window versus multi-window
+                models, or an error-correlation study of the ensemble. The right
+                conclusion is “promising evidence,” not “causal proof.”
+              </p>
+            </div>
+            <div className="fsc-evidence-note fsc-evaluation-warning">
+              <h3>The tuned score was selected on this holdout</h3>
+              <p>
+                The <code>0.33667</code> result was selected after testing multiple
+                LightGBM configurations against the same 16-day holdout. It is
+                therefore a model-selection result, not an independent final
+                estimate of generalization. A fresh holdout or rolling-origin
+                validation should be used before treating the tuned score as a
+                reliable out-of-sample result.
               </p>
             </div>
             <div className="fsc-kaggle-result">
@@ -342,20 +419,50 @@ export function FavoritaCaseStudyPage() {
             </div>
             <div className="fsc-code-grid">
               <div>
-                <p className="fsc-code-label">Run the renewed baseline workflow</p>
-                <pre><code>{`python -m pip install -e "[dev,visualization]"
+                <p className="fsc-code-label">Renewed workflow</p>
+                <pre><code>{`python -m pip install -e ".[dev,visualization,modeling]"
+# Renewed default: weekly seasonal-naive baseline
 python -m favorita_forecasting \
+  --model seasonal-naive \
+  --data-dir data \
+  --output-dir artifacts \
+  --plots
+
+# Optional renewed linear-lag baseline
+python -m favorita_forecasting \
+  --model linear-lag \
   --data-dir data \
   --output-dir artifacts \
   --plots`}</code></pre>
                 <p className="fsc-code-note">
-                  Requires the local competition data. This command writes baseline
-                  metrics, predictions, and conceptual diagnostic artifacts; it is
-                  not the command that produced the historical LightGBM result.
+                  Requires the local competition data. When data is present, each
+                  command writes data-backed metrics, predictions, and forecast/error
+                  plots. The renewed <code>linear-lag</code> model is deliberately
+                  narrower than the historical notebook: it uses calendar fields,
+                  sales lags <code>1, 7, 14</code>, and rolling means
+                  <code>7, 28</code>. It does not implement the notebook's Darts
+                  models, LightGBM, promotions, holidays, transactions, oil, or
+                  store-metadata features, so neither CLI command reproduces the
+                  historical scores above.
                 </p>
               </div>
               <div>
-                <p className="fsc-code-label">Inspect the important seams</p>
+                <p className="fsc-code-label">Historical notebook reproduction</p>
+                <pre><code>{`# From the project root
+python -m pip install -e ".[notebook]"
+jupyter notebook notebooks/legacy/store-sales-time-series-forecasting.ipynb`}</code></pre>
+                <p className="fsc-code-note">
+                  This launches the preserved Darts/LightGBM research record; it is
+                  the reproduction entry point, not a command that guarantees the
+                  displayed scores. The notebook's first setup cell repeats the
+                  <code>.[notebook]</code> install. Its later cells run
+                  <code>!kaggle competitions download -c
+                  store-sales-time-series-forecasting</code>, extract the archive
+                  into <code>data/</code>, and load the CSVs. Kaggle credentials,
+                  the raw competition data, and manual cell execution are required;
+                  the recorded scores remain historical until this path is rerun.
+                </p>
+                <p className="fsc-code-label">Inspect the renewed seams</p>
                 <ul className="fsc-link-list">
                   <li><a href="https://github.com/avsngh-git/Favorita-store-sales-prediction/blob/main/src/favorita_forecasting/data.py" target="_blank" rel="noreferrer">Data loading and schema validation</a></li>
                   <li><a href="https://github.com/avsngh-git/Favorita-store-sales-prediction/blob/main/src/favorita_forecasting/models.py" target="_blank" rel="noreferrer">Forecasting models</a></li>
